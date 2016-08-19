@@ -10,12 +10,12 @@
 
 # Change this line if you are using a different Fortran compiler
 #FORTRAN_COMPILER = gfortran
-FC = gfortran -O3 -fcheck=all -fdefault-real-8
+FC = gfortran -O3 -fbounds-check -fdefault-real-8
 #FC = gfortran -O3 -fcheck=all
 
 s = src
 m = mod
-o = obj
+o = src
 b = bin
 e = f90
 
