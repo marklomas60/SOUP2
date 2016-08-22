@@ -15,7 +15,7 @@ FC = gfortran -O3 -fbounds-check -fdefault-real-8
 
 s = src
 m = mod
-o = src
+o = obj
 b = bin
 e = f90
 
