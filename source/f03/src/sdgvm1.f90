@@ -95,13 +95,14 @@ end function outputs
 ! year,yr0)                                                            !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Set lanuse by allocating the cover of new ground.
+!> @brief Set landuse by allocating the cover of new ground.
 !! @details Assign gound available for new growth, through disturbance
-!! and mortality, given by ftprop. The values of the desired cover are
-!! given in the array 'cluse'. Note that any changes in the desired
-!! are only met if new ground is large enough to make up the difference.
-!! Over time the cover will reach any desired value and once reached
-!! the cover will remain constant.
+!! and mortality, given by ftprop. 
+!! For the specific year,check whether each ft can grow.
+!! If it can then ftprop(ft) acquires the value of cluse array which holds
+!! the desired cover for each ft and year as read from cover file.
+!! If ftprop(1)<0 then it sets it to 0 and proportionally reduced the 
+!! cover of the ofther fts.
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!

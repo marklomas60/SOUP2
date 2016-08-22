@@ -581,7 +581,12 @@ end subroutine sum_carbon
 !          ---------------------------------------------------         !
 !                                                                      !
 ! subroutine accumulate_dist_soil_res(total_carbon,show_all)           !
-!                                                                      !
+!!x is always 1,I think.                                               !
+!!Gets called when a cohort needs to die either y fire or NPP          !
+!!Sends carbon and water pools linked with the specific cohort to      !
+!!ssp%new... to be recycled later.Most importantly it calls            !
+!!INITIALISE_STATE_COHORT function which will set ssv parameters for   !
+!!this cohort to zero.
 !**********************************************************************!
 subroutine accumulate_dist_soil_res(ft,x)
 !**********************************************************************!
@@ -767,6 +772,11 @@ end subroutine RESET_SOIL_RES
 !                          ***************************                 *
 !                                                                      *
 ! Initialise the system state.                                         *
+!>@details:Initializes number of cohors and system state for each one  *
+!For all ft that are present in year 1,checks cluse(ft,1)>0.0, create  *
+!one cohort for each year of their permittable life span given by      *
+!pft%mort.Initial cover for each cohort is given by the ft total       *
+!cover of year 1 divided by the number of ft cohorts.                  *
 !                                                                      *
 !***********************************************************************
 subroutine INITIALISE_STATE(initise,nft,cluse,xtmpv,soilt)
@@ -926,6 +936,10 @@ end subroutine INITIALISE_STATE
 !                           COMPRESS_STATE                             *
 !                           **************                             *
 ! Remove cohorts with zero cover.                                      *
+!!Check the cover for each cohort.If it's >0 then it copies ssv and    *
+!!pft structures at a new cohort index.For the ones that remained with *
+!!cover =<0 it calls INITIALISE_STATE_COHORT function which sets all   *
+!!values of the ssv elements to zero.                                  *
 !***********************************************************************
 subroutine COMPRESS_STATE()
 !***********************************************************************
