@@ -12,19 +12,28 @@ implicit none
 
 contains
 
-!***********************************************************************
-!                                                                      *
-!                          SUBROUTINE COVER                            *
-!                          ----------------                            *
-!                                                                      *
-!First it calculates fire probability.                                 *
-!NEWGROWTH will first kill cohorts that exceeded the permissible age   *
-!for the ft and do similar for cohorts with low NPP.It will also       *
-!set ssv%cover to zero for those cases which means it will be available*
-!for use.It then proportianally assigns new cover to the fts that      *
-!need to make the biggest jump in cover fro the previous year to the   *
-!present.ftprop(ft) now describes the new cover to be assigned to each *
-!ft. 
+!**********************************************************************!
+!                                                                      !
+!                     cover :: veg_dynamics                            !
+!                      --- ---------------                             !
+!                                                                      !
+! subroutine COVER(nft,tmp,prc,firec,fireres,fprob,ftprop,             !
+! check_closure)                                                       !
+!                                                                      !                                                            
+!----------------------------------------------------------------------!
+!> @brief cover
+!! @details ! First it calculates empirical fire probability by calling
+!! FIRE subroutine. NEWGROWTH will kill cohorts that exceeded the permissible age   
+!! for the ft and do similar for cohorts with low NPP and fire.It will
+!! also set ssv%cover to zero for those cases which means cover will be 
+!! available for use.It then proportianally assigns new cover to the fts that      
+!! need to make the biggest jump in cover from the previous year to the   
+!! current.ftprop(ft) now describes the new cover to be assigned to each 
+!! ft.
+!!
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
 !***********************************************************************
 subroutine COVER(nft,tmp,prc,firec,fireres,fprob,ftprop,check_closure)
 !***********************************************************************
@@ -104,16 +113,24 @@ end subroutine COVER
 
 
 
-
-
-!***********************************************************************
-!                                                                      *
-!                          INITIALISE_NEW_COHORTS                      *
-!                          **********************                      *
-!!It gets ftprop(ft) which holds the cov it needs to add for each ft   *
-!!for this year.One new cohort for each ft will carry this cover.It    *
-!!will be initialised relatively to its cover and depending on what    *
-!!was left in the pools from cohorts that died.                        *
+!**********************************************************************!
+!                                                                      !
+!               INITIALISE_NEW_COHORTS :: veg_dynamics                 !
+!                -----------------------------------                   !
+!                                                                      !
+!     subroutine INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)      !
+!                                                                      !                                                            
+!----------------------------------------------------------------------!
+!> @brief INITIALISE_NEW_COHORTS
+!! @details ! It gets ftprop(ft) which holds the cov it needs to add 
+!! for each ft for this year from the COVER subroutine.One new cohort 
+!! for each ft will carry this cover.It will be initialised relatively 
+!! to its cover and depending on what was left in the pools from cohorts
+!! that died.
+!!
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
 !***********************************************************************
 subroutine INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)
 !***********************************************************************
@@ -1103,18 +1120,25 @@ end subroutine FIRE
 
 
 
-
-
-!***********************************************************************
-!                                                                      *
-!                            SUBROUTINE NEWGROWTH                      *
-!                            ********************                      *
-! Compute newgrowth and alter cover array accordingly.                 *
-!!First checks age.If one of the cohorts has exceeded the limit,it     *
-!!kills it by calling the ACCUMUATE_DIST_SOIL_RES.It then adds +1 to   *
-!!ages of all other cohorts.Calls COMPRESS_STATE to remove dead        *
-!!cohorts of previous step.Performs similar process to kill cohorts    *
-!!due to low NPP.                                                      *
+!**********************************************************************!
+!                                                                      !
+!                     NEWGROWTH :: veg_dynamics                        !
+!                      ----------------------                          !
+!                                                                      !
+!        subroutine NEWGROWTH(fprob,npp,nps,fireres,firec)             !
+!                                                                      !                                                            
+!----------------------------------------------------------------------!
+!> @brief NEWGROWTH
+!! @details ! Compute newgrowth and alter cover array accordingly.                 
+!! It first checks the age of each cohort.If it has exceeded the limit
+!! set by pft%mort,it kills it by calling the ACCUMUATE_DIST_SOIL_RES.
+!! It then adds +1 to the age of all other cohorts.Calls COMPRESS_STATE
+!! to remove dead/empty cohorts resulting from the previous step.
+!! Performs similar process to kill cohorts due to low NPP and fire. 
+!!
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
 !***********************************************************************
 subroutine NEWGROWTH(fprob,npp,nps,fireres,firec)
 !***********************************************************************

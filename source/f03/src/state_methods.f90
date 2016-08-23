@@ -765,19 +765,24 @@ end subroutine RESET_SOIL_RES
 
 
 
-
-!***********************************************************************
-!                                                                      *
-!                          SUBROUTINE INITIALISE_STATE                 *
-!                          ***************************                 *
-!                                                                      *
-! Initialise the system state.                                         *
-!>@details:Initializes number of cohors and system state for each one  *
-!For all ft that are present in year 1,checks cluse(ft,1)>0.0, create  *
-!one cohort for each year of their permittable life span given by      *
-!pft%mort.Initial cover for each cohort is given by the ft total       *
-!cover of year 1 divided by the number of ft cohorts.                  *
-!                                                                      *
+!**********************************************************************!
+!                                                                      !
+!                     initialise_state :: state_methods                !
+!                          ---------------                             !
+!                                                                      !
+! subroutine INITIALISE_STATE(initise,nft,cluse,xtmpv,soilt)           !
+!                                                                      !                                                            
+!----------------------------------------------------------------------!
+!> @brief Initialise cohorts for the gridcell prior to year loop
+!! @details ! Initializes number of cohors and system state for each
+!! ft that is present in year 1,checks cluse(ft,1)>0.0. For each ft
+!! create as many cohorts as its lifespan in years given by      
+!! pft%mort.Initial cover for each cohort is given by the ft total       
+!! cover of year 1 divided by the number of ft cohorts.
+!!
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
 !***********************************************************************
 subroutine INITIALISE_STATE(initise,nft,cluse,xtmpv,soilt)
 !***********************************************************************
@@ -930,16 +935,24 @@ end subroutine INITIALISE_STATE
 
 
 
-
-!***********************************************************************
-!                                                                      *
-!                           COMPRESS_STATE                             *
-!                           **************                             *
-! Remove cohorts with zero cover.                                      *
-!!Check the cover for each cohort.If it's >0 then it copies ssv and    *
-!!pft structures at a new cohort index.For the ones that remained with *
-!!cover =<0 it calls INITIALISE_STATE_COHORT function which sets all   *
-!!values of the ssv elements to zero.                                  *
+!**********************************************************************!
+!                                                                      !
+!                COMPRESS_STATE :: state_methods                       !
+!                 ----------------------------------                   !
+!                                                                      !
+!                   subroutine COMPRESS_STATE()                        !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Remove cohorts with zero cover
+!! @details ! Check the cover for each cohort.If it's >0 then it 
+!! copies ssv and pft structures at a new cohort index thus excluding 
+!! the ones with cover smaller than zero.For the ones with cover<0
+!! it calls INITIALISE_STATE_COHORT function which sets all values of 
+!! the ssv elements to zero.
+!!
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
 !***********************************************************************
 subroutine COMPRESS_STATE()
 !***********************************************************************
