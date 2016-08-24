@@ -12,7 +12,7 @@ contains
 ! real(dp) function dayl(lat,day)                                               !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief
+!> @brief Calculates daylength (h) for the gridcell lat and day of year
 !! @details
 !! @author Mark Lomas
 !! @date Feb 2006
@@ -20,7 +20,10 @@ contains
 real(dp) function dayl(lat,day)
 !**********************************************************************!
 implicit none
-real(dp) :: lat,del,has,tem
+real(dp) :: del !< solar declination
+real(dp) :: tem !< cosine of the hour angle at sunrise in radians
+real(dp) :: has !< hour angle in degrees   
+real(dp) :: lat
 integer :: day
 real(dp), parameter :: conv = 1.74532925e-2
 !----------------------------------------------------------------------!
@@ -51,7 +54,7 @@ end function dayl
 ! SUBROUTINE pfd(lat,day,hrs,cloud,direct,diffuse,total)               !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief
+!> @brief Calculates total,direct and diffuse radiation for the day
 !! @details
 !! @author Mark Lomas
 !! @date Feb 2006
@@ -59,8 +62,16 @@ end function dayl
 subroutine pfd(lat,day,hrs,cloud,direct,diffuse,total)
 !**********************************************************************!
 implicit none
-real(dp) :: lat,hrs,del,rlat,toa,cloud,diffprop,alpha,beta, &
- sigma,dawn_angle,coscst,direct,diffuse,total,clearness
+real(dp) :: hrs !< day length in hours
+real(dp) :: del !< solar declination
+real(dp) :: toa !< solar flux density average over day
+real(dp) :: rlat !< latitude in radians
+real(dp) :: dawn_angle !< Hour angle in radians it will integrate for
+real(dp) :: total !< Average direct and diffuse radiation in mole/m2/sec
+real(dp) :: direct !< Average direct radiation in mole/m2/sec
+real(dp) :: diffuse !< Average diffuse radiation in mole/m2/sec
+real(dp) :: lat,cloud,diffprop,alpha,beta, &
+ sigma,coscst,clearness
 integer :: day
 real(dp), parameter :: conv = 1.74532925e-2, pi = 3.1415927
 !----------------------------------------------------------------------!

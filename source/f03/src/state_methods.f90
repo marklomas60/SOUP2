@@ -572,21 +572,21 @@ if (show_all) write(*,*) 'Grand total     ',total_carbon
 end subroutine sum_carbon
 
 
-
-
-
+!----------------------------------------------------------------------!
 !**********************************************************************!
 !                                                                      !
 !          restrict_cohort_numbers :: accumulate_dist_soil_res         !
 !          ---------------------------------------------------         !
 !                                                                      !
-! subroutine accumulate_dist_soil_res(total_carbon,show_all)           !
-!!x is always 1,I think.                                               !
-!!Gets called when a cohort needs to die either y fire or NPP          !
-!!Sends carbon and water pools linked with the specific cohort to      !
-!!ssp%new... to be recycled later.Most importantly it calls            !
-!!INITIALISE_STATE_COHORT function which will set ssv parameters for   !
-!!this cohort to zero.
+!> @bried accumulate_dist)soil_res                                     !
+!! @details ! Gets called when a cohort needs to die either by fire or !
+!! low NPP.Sends carbon and water pools linked with the specific cohort!
+!! to ssp%new... to be recycled later.Most importantly it calls        !
+!! INITIALISE_STATE_COHORT function which will set ssv parameters for  !
+!! this cohort to zero.
+!!
+!! @author Mark Lomas
+!! @date Feb 2006
 !**********************************************************************!
 subroutine accumulate_dist_soil_res(ft,x)
 !**********************************************************************!

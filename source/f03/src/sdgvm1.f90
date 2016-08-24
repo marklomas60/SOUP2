@@ -1177,12 +1177,12 @@ end subroutine mkdlit
 !                          sum_soilcn :: sdgvm1                        !
 !                          --------------------                        !
 !                                                                      !
-! subroutine sum_soilcn(soilc,soiln,minn)                              !
+!               subroutine sum_soilcn(soilc,soiln,minn)                !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Read internal parameters from "param.dat" file, and io
-!! parameters from "misc_params.dat".
-!! @details
+!> @brief sum_soilcn
+!! @details ! Adds up carbon and nitrogen in the soil for all cohorts
+!!
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
@@ -1260,7 +1260,8 @@ end subroutine swap
 !----------------------------------------------------------------------!
 subroutine mix_water(ftcov,nft)
 !**********************************************************************!
-real(dp) :: ftcov(max_cohorts),mix(max_cohorts)
+real(dp) :: ftcov(max_cohorts) !< Holds total cover for each ft
+real(dp) :: mix(max_cohorts)
 real(dp) :: share1,share2,share3,share4,share5,share6,sum
 integer :: nft,ft,mapft
 !----------------------------------------------------------------------!

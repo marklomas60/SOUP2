@@ -202,7 +202,7 @@ do site=1,sites
 ! Initialise the system state.                                         !
 !----------------------------------------------------------------------!
     call INITIALISE_STATE(initise,nft,cluse,xtmpv,soilt)
-
+    
     do iyear=1,nyears
 
       year = yearv(iyear)
