@@ -45,7 +45,6 @@ contains
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-!----------------------------------------------------------------------!
 subroutine phenology(yield,laiinc)
 !**********************************************************************!
 real(dp) :: yield,laiinc
@@ -86,12 +85,11 @@ end subroutine phenology
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-!**********************************************************************!
 subroutine phenology1(yield,laiinc)
 !**********************************************************************!
 real(dp), parameter :: maxlai = 10.9
 real(dp) :: rlai,lairat,laiinc,wtwp,wtfc,bb0,bbmax,bblim,sslim,bbsum, &
- yield,smtrig,tsuma,stemfr,maint,ftagh
+ yield,smtrig,tsuma,stemfr,maint,ftagh,soil2g,soilw
 integer :: lai,leafls,mnth,day,ij,i,bb,gs,bbgs,sssum
 integer :: bb2bbmin,bb2bbmax,bbm,ssm,sss,ss,dsbb
 integer :: ftdth,harvest,chill,dschill,co
@@ -157,17 +155,22 @@ if (dschill>260) then
 endif
 
 !----------------------------------------------------------------------!
-! Bubburst, if no budburst set, and sufficient soil moisture, then     *
+! Bubburst, if no budburst set, and sufficient soil moisture, then     !
 ! check for  budburst.                                                 !
 !----------------------------------------------------------------------!
-if (((bb==0).and.(msv%mv_soil2g>wtwp+0.25*(wtfc-wtwp))).or. &
- ((dsbb>bb2bbmax).and.(msv%mv_soil2g>wtwp+0.1*(wtfc-wtwp)))) then
+soilw = ssv(co)%soil_h2o(1) + ssv(co)%soil_h2o(2) + &
+ ssv(co)%soil_h2o(3) + ssv(co)%soil_h2o(4)
+soil2g = soilw/(ssp%soil_depth*10.0)
+
+!if (((bb==0).and.(msv%mv_soil2g>wtwp+0.25*(wtfc-wtwp))).or. &
+! ((dsbb>bb2bbmax).and.(msv%mv_soil2g>wtwp+0.1*(wtfc-wtwp)))) then
+if (((bb==0).and.(soil2g>wtwp+0.25*(wtfc-wtwp))).or. &
+ ((dsbb>bb2bbmax).and.(soil2g>wtwp+0.1*(wtfc-wtwp)))) then
 
   smtrig = 0.0
   do i=1,30
     smtrig = smtrig + ssv(co)%sm_trig(i)
   enddo
-
   if ((smtrig>30.0).or.(dsbb>bb2bbmax)) then
 
 !----------------------------------------------------------------------!
@@ -248,7 +251,7 @@ endif
 !----------------------------------------------------------------------!
 if (rlai>1.0e-6) then
   if (abs(ftagh)<1.0e-6) then
-    if (msv%mv_soil2g<wtwp*0.0) then
+    if (soil2g<wtwp*0.0) then
 !----------------------------------------------------------------------!
 ! Senescence event due to soil moisture.                               !
 !----------------------------------------------------------------------!
@@ -313,12 +316,11 @@ end subroutine phenology1
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-!**********************************************************************!
 subroutine phenology2(yield,laiinc)
 !**********************************************************************!
 real(dp), parameter :: maxlai = 10.9
 real(dp) :: rlai,lairat,wtwp,laiinc,wtfc,bb0,bbmax,bblim,sslim,bbsum,yield,smtrig, &
- tsuma,stemfr,maint
+ tsuma,stemfr,maint,soil2g,soilw
 integer :: lai,leafls,ij,i,bb,gs,bbgs,sssum,bb2bbmin,bb2bbmax,bbm,ssm, &
  sss,ss,dsbb,chill,dschill,co,day,mnth
 !----------------------------------------------------------------------!
@@ -382,11 +384,14 @@ endif
 !if (bb > 0) stop
 
 !----------------------------------------------------------------------!
-! Bubburst, if no budburst set, and sufficient soil moisture, then     *
+! Bubburst, if no budburst set, and sufficient soil moisture, then     !
 ! check for  budburst.                                                 !
 !----------------------------------------------------------------------!
-if (((bb==0).and.(msv%mv_soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
- ((dsbb>bb2bbmax).and.(msv%mv_soil2g>wtwp+0.1*(wtfc-wtwp)))) then
+soilw = ssv(co)%soil_h2o(1) + ssv(co)%soil_h2o(2) + &
+ ssv(co)%soil_h2o(3) + ssv(co)%soil_h2o(4)
+soil2g = soilw/(ssp%soil_depth*10.0)
+if (((bb==0).and.(soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
+ ((dsbb>bb2bbmax).and.(soil2g>wtwp+0.1*(wtfc-wtwp)))) then
 
   smtrig = 0.0
   do i=1,30
@@ -406,7 +411,7 @@ if (((bb==0).and.(msv%mv_soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
     if ((real(bbsum)>=real(bblim)*exp(-0.01*real(dschill))) &
  .or.(dsbb>bb2bbmax)) then
 !----------------------------------------------------------------------!
-! Adjust proportion of gpp going into stem production based on suma.   *
+! Adjust proportion of gpp going into stem production based on suma.   !
 ! This is essentially the LAI control.                                 !
 !----------------------------------------------------------------------!
       tsuma = ssv(co)%suma%tot
@@ -420,7 +425,7 @@ if (((bb==0).and.(msv%mv_soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
       if (stemfr<120.0) stemfr = 120.0
 
 !----------------------------------------------------------------------!
-! Budburst occurance.                                                 !
+! Budburst occurance.                                                  !
 !----------------------------------------------------------------------!
 !      print*,mnth,day,' budburst'
       bb = (mnth-1)*30 + day
@@ -445,7 +450,7 @@ if (((bb==0).and.(msv%mv_soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
 endif
 
 !----------------------------------------------------------------------!
-! Compute length of growing season, and set to zero when equal to      *
+! Compute length of growing season, and set to zero when equal to      !
 ! growing season.                                                      !
 !----------------------------------------------------------------------!
 if (bb>0)  bbgs = bbgs + 1
@@ -472,7 +477,7 @@ endif
 ! Senescence, if rlai is greater than zero, compute senescence.        !
 !----------------------------------------------------------------------!
 if (rlai>1.0e-6) then
-  if (msv%mv_soil2g<wtwp*0.0) then
+  if (soil2g<wtwp*0.0) then
 !----------------------------------------------------------------------!
 ! Senescence event due to soil moisture.                               !
 !----------------------------------------------------------------------!
@@ -480,7 +485,7 @@ if (rlai>1.0e-6) then
     ss = day + (mnth - 1)*30
   elseif (bbgs>100) then
 !----------------------------------------------------------------------!
-! Check for senescence, senescence occurs there are 'sss' days colder  *
+! Check for senescence, senescence occurs there are 'sss' days colder  !
 ! than 'sslim' out of the last 'ssm' days.                             !
 !----------------------------------------------------------------------!
     sssum = 0
@@ -537,11 +542,6 @@ logical :: check_closure
 real(dp) :: sumrr,sumsr,sumlr,summr
 save :: sumrr,sumsr,sumlr,summr
 !----------------------------------------------------------------------!
-!print*,'------------------'
-!print*,'daygpp ',daygpp, ssp%cohort
-!print*,'resp_l ',resp_l
-!print*,'laiinc ',laiinc
-!print*,'nppstore ',ssv(co)%nppstore(1:3)
 
 co = ssp%cohort
 
@@ -568,7 +568,6 @@ if (laiinc>0.0) then
   ssv(co)%nppstore(1) = ssv(co)%nppstore(1) - laiinc*msv%mv_leafmol*1.25*12.0
   ssv(co)%nppstore(2) = ssv(co)%nppstore(2) - laiinc*msv%mv_leafmol*1.25*12.0
   resp_m = 0.25*laiinc*msv%mv_leafmol*12.0
-!  print*,ssv(co)%lai,laiinc,resp_m
   resp = resp + resp_m
 else
   resp_m = 0.0
@@ -606,7 +605,6 @@ if (check_closure) then
     stop
   endif
 endif
-!----------------------------------------------------------------------!
 
 !----------------------------------------------------------------------!
 ! Pay for days roots if veg exists
@@ -644,7 +642,6 @@ if (check_closure) then
     stop
   endif
 endif
-!----------------------------------------------------------------------!
 
 !----------------------------------------------------------------------!
 ! Stem resperation, and NPP                                            !
@@ -681,6 +678,7 @@ if (check_closure) then
     stop
   endif
 endif
+
 !----------------------------------------------------------------------!
 
 daynpp = daynpp - resp
@@ -701,13 +699,6 @@ endif
 
 endif
 
-if (ssp%cohort == -1) then
-  print*,'gpp & resp',daygpp,resp_l
-  print*,'maint & lai inc ',resp_m,laiinc
-  print*,ssp%mnth,ssp%day,resp_s,resp_r
-!  print'(2i4,6f10.3)',ssp%mnth,ssp%day,daygpp,daynpp,resp_l,resp_s,resp_r,resp_m
-endif
-
 if (ssp%cohort == 1) then
       if ((ssp%day == 1).and.(ssp%mnth == 1)) then
         sumsr=0.0
@@ -719,7 +710,6 @@ if (ssp%cohort == 1) then
       sumrr = sumrr + resp_r
       sumlr = sumlr + resp_l
       summr = summr + resp_m
-      if ((ssp%day == -30).and.(ssp%mnth == 12)) print'(4f10.3)',sumsr,sumrr,sumlr,summr
 endif
 
 end subroutine allocation

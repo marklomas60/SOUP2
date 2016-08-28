@@ -336,7 +336,6 @@ integer :: xlatresn,xlonresn,yr0,yrf,isite,xyear0,xyearf,du,seed1,seed2,seed3, &
 integer :: xtmpv(500,12,31),xprcv(500,12,31),xhumv(500,12,31),xcldv(500,12)
 logical :: l_clim,l_stats,withcloudcover
 !----------------------------------------------------------------------!
-
 if ((day_mnth==1).and.(thty_dys==1)) then
   call EX_CLIM(stinput,lat,lon,xlatf,xlatres,xlatresn,xlon0,xlonres, &
  xlonresn,yr0,yrf,xtmpv,xhumv,xprcv,isite,xyear0,xyearf,siteno,du)
