@@ -71,9 +71,9 @@ canopyalbedo=2.0*kbeam/(kbeam+kdiff)*(1.0-m)/(1.0+m)
 albedobeam=canopyalbedo+(soilalbedo-canopyalbedo)*exp(-kbeam*rlai)
 albedodiff=albedobeam
 !----------------------------------------------------------------------!
-qt = 3.0
+qt = 2.3
 qt1 = qt**(t/10.0)/qt**(2.5)
-qt2 = 100.0*qt**(30.0/10.0)/qt**(2.5)
+qt2 = qt**(30.0/10.0)/qt**(2.5)
 
 suma = 0.0
 sumd = 0.0
@@ -237,6 +237,11 @@ if ((rlai>0.1).and.(q>0.0)) then
     endif
 
   enddo
+
+! vm(i) = nleaf*tgp%p_vm
+!      vmx(i)=vm(i)*qt1
+!      if (t>30.0) vmx(i)=qt2
+!      vmx(i) = vmx(i)*vmxp1
 
 !----------------------------------------------------------------------!
 !     fAPAR calculation added here from gh nppcalc.f amf251105

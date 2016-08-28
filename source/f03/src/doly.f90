@@ -11,6 +11,7 @@ use productivity_methods
 use misc_values
 use site_parameters
 use tuning_parameters
+use system_state
 
 implicit none
 
@@ -159,6 +160,7 @@ amx = -1000.0
 amax = -1000.0
 
 !----------------------------------------------------------------------!
+
 soilw = ssv(ft)%soil_h2o(1) + ssv(ft)%soil_h2o(2) + &
  ssv(ft)%soil_h2o(3) + ssv(ft)%soil_h2o(4)
 soil2g = soilw/(ssp%soil_depth*10.0)
