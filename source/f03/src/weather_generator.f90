@@ -278,7 +278,7 @@ if ((indx(2,2)==1).or.(indx(2,3)==1).or.(indx(3,2)==1).or. &
        correction=0.0
 
        do day=1,30
-          tmp_yesterday=TEMP_DAY_MEAN2_FN(0.1_dp*FLOATINGMEAN(day,mnth,year-yr0+1, &
+          tmp_yesterday=TEMP_DAY_MEAN2_FN(0.1_dp*FLOATINGMEAN2(day,mnth,year-yr0+1, &
  yrf-yr0+1,mtmpv),mstdtmpv(mnth),tmp_autocorr_month,tmp_yesterday, &
  seed1,seed2,seed3,1)
           tmpv(year-yr0+1,mnth,day)=int(100.0*tmp_yesterday+0.5)
@@ -296,7 +296,7 @@ if ((indx(2,2)==1).or.(indx(2,3)==1).or.(indx(3,2)==1).or. &
 ! generate the humidity
        correction=0.0
        do day=1,30
-          hum_yesterday = HUM_DAY_MEAN2_FN(0.1_dp*FLOATINGMEAN(day,mnth, &
+          hum_yesterday = HUM_DAY_MEAN2_FN(0.1_dp*FLOATINGMEAN2(day,mnth, &
  year-yr0+1,yrf-yr0+1,mhumv),mstdhumv(mnth),hum_autocorr_month, hum_yesterday, &
  seed1,seed2,seed3,1)
           humv(year-yr0+1,mnth,day) =int(100.0*hum_yesterday + 0.5)
@@ -313,7 +313,6 @@ if ((indx(2,2)==1).or.(indx(2,3)==1).or.(indx(3,2)==1).or. &
 else
   l_clim = .false.
 endif
-
 
 end subroutine EX_CLIM_WEATHER_GENERATOR
 
@@ -444,6 +443,7 @@ if (day<=15) then
     endif
   endif
   mean=(day*(1.0*array(year,mnth))+(15-day)*(1.0*array(y,m)))/15.0
+  print*,'hellox ',mean
 else
   if (mnth<12) then
     y=year
@@ -463,6 +463,52 @@ endif
 floatingmean=mean
 
 end function FLOATINGMEAN
+
+
+
+
+!----------------------------------------------------------------------*
+real(dp) function FLOATINGMEAN2(day,mnth,year,lastyear,array)
+!----------------------------------------------------------------------*
+integer :: day,mnth,year,lastyear
+integer :: array(500,12)
+real(dp) :: x0,x,xf,y,xx0,xxf
+integer iyear,imnth
+
+if (mnth>1) then
+  x0 = array(year,mnth-1)
+else
+  if (year>1) then
+    x0 = array(year-1,12)
+  else
+    x0 = array(year,12)
+  endif
+endif
+x  = array(year,mnth)
+if (mnth<12) then
+  xf = array(year,mnth+1)
+else
+  if (year<lastyear) then
+    xf = array(year+1,1)
+  else
+    xf = array(year,1)
+  endif
+endif
+
+xx0 = (x0+x)/2.0
+xxf = (xf+x)/2.0
+y = 2.0*x - (xx0 + xxf)/2.0
+
+if (day<=15) then
+  floatingmean2 = xx0 + real(day-1)*(y-xx0)/14.0
+else
+  floatingmean2 = y + real(day-16)*(xxf-y)/14.0
+endif
+
+!      print'(i3,5f8.2)',day,floatingmean2,x,x0,xf,y
+!      if (day.eq.10) print'(3f8.2)',x0,x,xf
+
+end function floatingmean2
 
 
 
