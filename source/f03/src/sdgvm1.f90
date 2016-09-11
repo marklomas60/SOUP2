@@ -17,7 +17,7 @@ contains
 !                          -----------------                           !
 !                                                                      !
 ! real(dp) function outputs(daily_out,ind,st1)                         !
-!                                                                      !
+! !DELETE LINE                                                         !
 !----------------------------------------------------------------------!
 !> @brief Compute outputs from daily_out.
 !! @details Four forms of outputs are available and are specified by
