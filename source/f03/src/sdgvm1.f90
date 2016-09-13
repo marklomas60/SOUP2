@@ -263,7 +263,7 @@ if (ilanduse==0) then
         cluse(ft,year-yr0+1) = lutab(luse(year-yr0+1),ft)
       enddo
     enddo
-  else            
+  else
     call EX_CLU(stlu,lat,lon,nft,lutab,cluse,yr0,yrf,du,l_lu)
   endif
 elseif (ilanduse==1) then

@@ -1080,7 +1080,11 @@ end subroutine read_input_file
 !----------------------------------------------------------------------!
 !> @brief Read internal parameters from "param.dat" file, and io
 !! parameters from "misc_params.dat".
-!! @details
+!! @details First reads misc_params.dat file in /f03 with input on year
+!! step to output on screen and whether run is regional or country.Saved
+!! in msp structure defined in misc_parameters.f90.
+!! It then reads the param.dat file in /inc with the tuning parameters
+!! and saves in structure tgp defined in tuning_parameters.f90.
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!

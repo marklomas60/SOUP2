@@ -703,7 +703,7 @@ do i=1,yrf-yr0+1
           col = int(rcol)+ii-1
           if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) then
             recn = (row-1)*lonn + col
-            read(99,'(i3)',rec=recn) x
+            read(99,'(i3)',rec=recn) x 
             xx(ii,jj) = real(x)
             if (x<200) then
               indx(ii,jj) = 1
@@ -719,12 +719,12 @@ do i=1,yrf-yr0+1
       call bi_lin(xx,indx,xnorm,ynorm,ans)
 
       x = int(ans+0.5)
-
+      
       classprop(classes(k)) = ans
       close(99)
 
     enddo ! end of loop over the classes
-
+    
 !----------------------------------------------------------------------!
 ! Now calculate the ftprop.
 !----------------------------------------------------------------------!
@@ -1041,8 +1041,11 @@ end subroutine bi_lin
 ! subroutine readCO2(stco2,yr0,yrf,co2)                                !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief
-!! @details
+!> @brief Reads co2 values for each year
+!! @details It will read from the co2 file the concentration vector 
+!! with starting and end year as produced by the read_input_file sub.
+!! If the co2 file has only one value then it will be used for all the
+!! years meaning constant co2 concentrations.
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!

@@ -204,7 +204,7 @@ end subroutine open_optional
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Open input and/or output files for state vector.
-!! @details
+!! @details Opens input and/or output files for state vector
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
