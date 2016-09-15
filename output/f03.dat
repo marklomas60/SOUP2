@@ -1,18 +1,18 @@
 UNIX
-../../data/clim/global/cru3/1deg/monthly
-../../data/stats/global/era40/30min
-../../data/soil/global/islscp2/1deg/0-150
-../../data/land_use/global/glc2000/30min
-../../data/co2/co2.dat
+../../../SDGVM2/data/clim/global/cru3/1deg/monthly
+../../../SDGVM2/data/stats/global/era40/30min
+../../../SDGVM2/data/soil/global/islscp2/1deg/0-150
+../../../SDGVM2/data/land_use/global/glc2000/30min
+../../../SDGVM2/data/co2/co2.dat
 29.62
-../../data
+../../../SDGVM2/data
 
 ./
 ../../output/f03
 
 1 0 0 1
-50 1901 20 1 1901 1910
-PIXEL ALL 100 prc npp evt lai swf
+50 1901 20 1 1901 2000
+PIXEL ALL 100 prc npp evt lai swf gpp tmp prc hum
 SUBPIXEL
 SNAPSHOTS 
 
@@ -49,7 +49,7 @@ SNAPSHOTS
 20  100 BARE
 21  100 BARE
 22  100 BARE
-33  100 BARE
+33  100 Crop
 
 0.05 0.5 1000
 
@@ -66,5 +66,5 @@ SNAPSHOTS
 0 0 0 0 0 0 0 100.0
 
 0
-1901 7
+1901 33
 
