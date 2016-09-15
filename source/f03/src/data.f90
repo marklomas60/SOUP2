@@ -584,10 +584,16 @@ end subroutine ex_lu
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief
-!! @details  Extract land use from land use soils database for the
+!! @details  Extract land use from land use database for the
 !! nearest site to lat,lon, replace lat,lon with the nearest cell from
 !! the database. The data contains the percent (in byte format) for
-!! each pft from 2 to nft
+!! each pft from 2 to nft.
+!! First reads the readme.dat from the land use dataset with info such 
+!! as resolution,years available and number of classes.Description of
+!! classes and proportion assigned to model ft are ignored.
+!! Land use must be written per class per year in vector format (i3)
+!! 0-100 with 255 for water.Direction is West to East,North to South.
+!! lutab(landcover classes,nft) is read from setup file.
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
