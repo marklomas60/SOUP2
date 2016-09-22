@@ -431,12 +431,15 @@ end subroutine REMOVE_COHORT
 
 !**********************************************************************!
 !                                                                      !
-!        restrict_cohort_numbers :: initialise_state_cohort            !
-!        --------------------------------------------------            !
+!        INITIALISE_STATE_COHORT :: state_methods                      !
+!        ----------------------------------------                      !
 !                                                                      !
 ! subroutine initialise_state_cohort(cohort)                           !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
+!> @brief Initialise state cohort
+!! @details ! Set values of new cohort to zero
+!----------------------------------------------------------------------!
 subroutine initialise_state_cohort(cohort)
 !***********************************************************************
 integer :: cohort,i
