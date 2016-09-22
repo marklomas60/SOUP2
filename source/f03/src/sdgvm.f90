@@ -202,7 +202,7 @@ do site=1,sites
 ! Initialise the system state.                                         !
 !----------------------------------------------------------------------!
     call INITIALISE_STATE(initise,nft,cluse,xtmpv,soilt)
-    
+          
     do iyear=1,nyears
 
       year = yearv(iyear)
@@ -240,7 +240,7 @@ do site=1,sites
       call MKDLIT()
 
       call RESTRICT_COHORT_NUMBERS()
-
+        
 !----------------------------------------------------------------------!
 ! Initialisations that were in doly at the beginning of the year       !
 !----------------------------------------------------------------------!

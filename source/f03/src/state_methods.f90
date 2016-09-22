@@ -350,12 +350,20 @@ end subroutine COMBINE_COHORTS
 
 !**********************************************************************!
 !                                                                      !
-!                restrict_cohort_numbers :: make_co2ftmap              !
-!                ----------------------------------------              !
+!                       make_co2ftmap :: state_methods                 !
+!                      -------------------------------                 !
 !                                                                      !
 ! subroutine make_co2ftmap(show)                                       !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
+!> @brief Make cohort to ft map
+!! @details pft(cohort)%itag holds the functional type of each cohort.
+!! ssp%co2ftmap(functional type,1) holds the number of cohorts for each
+!! functional type.
+!! ssp%co2ftmap(functional type,2:end) holds the cohorts assigned to
+!! the functional type.
+!! @author Mark Lomas
+!! @date Feb 2006
 subroutine make_co2ftmap(show)
 !**********************************************************************!
 integer :: ft
