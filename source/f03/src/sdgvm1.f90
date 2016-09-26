@@ -101,7 +101,7 @@ end function outputs
 !! For the specific year,check whether each ft can grow.
 !! If it can then ftprop(ft) acquires the value of cluse array which holds
 !! the desired cover for each ft and year as read from cover file.
-!! If ftprop(1)<0 then it sets it to 0 and proportionally reduced the 
+!! If ftprop(1)<0 then it sets it to 0 and proportionally reduces the 
 !! cover of the ofther fts to add up to 100.
 !!
 !! @author Mark Lomas

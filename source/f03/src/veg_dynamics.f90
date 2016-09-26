@@ -122,8 +122,9 @@ end subroutine COVER
 !                                                                      !                                                            
 !----------------------------------------------------------------------!
 !> @brief INITIALISE_NEW_COHORTS
-!! @details ! It gets ftprop(ft) which holds the cov it needs to add 
-!! for each ft for this year from the COVER subroutine.One new cohort 
+!! @details ! From sub COVER called right before, it gets ftprop(ft) 
+!! which holds the cov it needs to add for each ft for this year.
+!! One new cohort 
 !! for each ft will carry this cover.It will be initialised relatively 
 !! to its cover and depending on what was left in the pools from cohorts
 !! that died.
