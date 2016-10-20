@@ -778,7 +778,10 @@ end subroutine RESET_SOIL_RES
 !! ft that is present in year 1,checks cluse(ft,1)>0.0. For each ft
 !! create as many cohorts as its lifespan in years given by      
 !! pft%mort.Initial cover for each cohort is given by the ft total       
-!! cover of year 1 divided by the number of ft cohorts.
+!! cover of year 1 divided by the number of ft cohorts.It has previously
+!! read the pft parameters for each ft from file and assigned them to 
+!! variable pft_tab(ft).Here is assigns the correct parameters to the
+!! same variable type pft(cohort) for each cohort.
 !!
 !! @author Mark Lomas
 !! @date Feb 2006

@@ -25,7 +25,7 @@ all: $(o)/real_precision.o $(o)/dims.o $(o)/pft_parameters.o $(o)/system_state.o
  $(o)/open_files.o $(o)/data.o $(o)/weather_generator.o $(o)/veg_dynamics.o \
  $(o)/sdgvm1.o $(o)/read_input.o $(o)/hydrology_methods.o \
  $(o)/phenology_methods.o $(o)/sunshade.o $(o)/productivity_methods.o \
- $(o)/doly.o $(o)/soil_methods.o $(o)/light_methods.o $(o)/sdgvm.o
+ $(o)/doly.o $(o)/soil_methods.o $(o)/light_methods.o $(o)/crops.o $(o)/sdgvm.o
 	$(FC) -o $b/sdgvm.exe \
  $(o)/real_precision.o $(o)/dims.o $(o)/pft_parameters.o $(o)/system_state.o \
  $(o)/site_parameters.o $(o)/tuning_parameters.o $(o)/misc_parameters.o \
@@ -33,7 +33,10 @@ all: $(o)/real_precision.o $(o)/dims.o $(o)/pft_parameters.o $(o)/system_state.o
  $(o)/open_files.o $(o)/data.o $(o)/weather_generator.o $(o)/veg_dynamics.o \
  $(o)/sdgvm1.o $(o)/read_input.o $(o)/hydrology_methods.o \
  $(o)/phenology_methods.o $(o)/sunshade.o $(o)/productivity_methods.o \
- $(o)/doly.o $(o)/soil_methods.o $(o)/light_methods.o $(o)/sdgvm.o -Jmod
+ $(o)/doly.o $(o)/soil_methods.o $(o)/light_methods.o $(o)/crops.o $(o)/sdgvm.o -Jmod
+
+$(o)/crops.o: $(s)/crops.$(e)
+	$(FC) -o $(o)/crops.o -c $(s)/crops.$(e) -J$(m)
 
 $(o)/real_precision.o: $(s)/real_precision.$(e)
 	$(FC) -o $(o)/real_precision.o -c $(s)/real_precision.$(e) -J$(m)
@@ -107,7 +110,7 @@ $(o)/soil_methods.o: $(s)/soil_methods.$(e) $(s)/real_precision.$(e) $(s)/soil_m
 $(o)/light_methods.o: $(s)/light_methods.$(e) $(s)/real_precision.$(e)
 	$(FC) -o $(o)/light_methods.o -c $(s)/light_methods.$(e) -J$(m)
 
-$(o)/sdgvm.o: $(s)/sdgvm.$(e) $(s)/real_precision.$(e) $(s)/dims.$(e) $(s)/system_state.$(e) $(s)/pft_parameters.$(e) $(s)/state_methods.$(e) $(s)/sdgvm1.$(e) $(s)/read_input.$(e) $(s)/phenology_methods.$(e) $(s)/doly.$(e) $(s)/hydrology_methods.$(e) $(s)/light_methods.$(e) $(s)/soil_methods.$(e) $(s)/misc_values.$(e)
+$(o)/sdgvm.o: $(s)/sdgvm.$(e) $(s)/real_precision.$(e) $(s)/dims.$(e) $(s)/system_state.$(e) $(s)/pft_parameters.$(e) $(s)/state_methods.$(e) $(s)/sdgvm1.$(e) $(s)/read_input.$(e) $(s)/phenology_methods.$(e) $(s)/doly.$(e) $(s)/hydrology_methods.$(e) $(s)/light_methods.$(e) $(s)/soil_methods.$(e) $(s)/misc_values.$(e) $(s)/crops.$(e)
 	$(FC) -o $(o)/sdgvm.o -c $(s)/sdgvm.$(e) -J$(m)
 
 clean:

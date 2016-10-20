@@ -21,7 +21,7 @@ use hydrology_methods
 use light_methods
 use soil_methods
 use misc_values
-
+use crops
 implicit none
 
 character(len=1000), parameter :: stver = 'VERSION current'
@@ -240,7 +240,7 @@ do site=1,sites
       call MKDLIT()
 
       call RESTRICT_COHORT_NUMBERS()
-
+      
 !----------------------------------------------------------------------!
 ! Initialisations that were in doly at the beginning of the year       !
 !----------------------------------------------------------------------!
