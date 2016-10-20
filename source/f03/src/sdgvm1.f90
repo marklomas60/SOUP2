@@ -153,6 +153,10 @@ end subroutine set_landuse
 !> @brief Set 'tmp' 'hum' 'prc' and 'cld'.
 !! @details Assign climate from the raw data which is help in 'x???v'
 !! arrays.
+!! It also calculates the monthly average of temperature,precipitation
+!! and humidity.It uses that info to calculate the exponentially-weighted
+!! 20-year monthly means for crops which is assigned to site structure
+!! variable ssp
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
@@ -166,11 +170,17 @@ logical :: withcloudcover
 real(dp) :: tmp(12,31),prc(12,31),hum(12,31),cld(12)
 !----------------------------------------------------------------------!
 
+ssp%mnthtmp(:)=0.
+ssp%mnthprc(:)=0.
+ssp%mnthhum(:)=0.
+
 do mnth=1,12
   do day=1,no_days(year,mnth,thty_dys)
     tmp(mnth,day) = real(xtmpv(yearv(iyear)-yr0+1,mnth,day))/100.0
     prc(mnth,day) = real(xprcv(yearv(iyear)-yr0+1,mnth,day))/10.0
     hum(mnth,day) = real(xhumv(yearv(iyear)-yr0+1,mnth,day))/100.0
+    ssp%mnthtmp(mnth)=ssp%mnthtmp(mnth)+tmp(mnth,day)/no_days(year,mnth,thty_dys)
+    ssp%mnthprc(mnth)=ssp%mnthprc(mnth)+prc(mnth,day)/no_days(year,mnth,thty_dys)
     if (withcloudcover) then
       cld(mnth) = real(xcldv(yearv(iyear)-yr0+1,mnth))/1000.0
     else
@@ -183,8 +193,19 @@ do mnth=1,12
   do day=1,no_days(year,mnth,thty_dys)
     if (hum(mnth,day)<30.0)  hum(mnth,day) = 30.0
     if (hum(mnth,day)>95.0)  hum(mnth,day) = 95.0
+    ssp%mnthhum(mnth)=ssp%mnthhum(mnth)+hum(mnth,day)/no_days(year,mnth,thty_dys)
   enddo
 enddo
+
+if(iyear.eq.1) then
+  ssp%emnthtmp(:)=ssp%mnthtmp(:)
+  ssp%emnthprc(:)=ssp%mnthprc(:)
+  ssp%emnthhum(:)=ssp%mnthhum(:)
+else
+  ssp%emnthtmp(:)=0.95*ssp%emnthtmp(:)+0.05*ssp%mnthtmp(:)
+  ssp%emnthprc(:)=0.95*ssp%emnthprc(:)+0.05*ssp%mnthprc(:)
+  ssp%emnthhum(:)=0.95*ssp%emnthhum(:)+0.05*ssp%mnthhum(:)
+endif
 
 end subroutine set_climate
 

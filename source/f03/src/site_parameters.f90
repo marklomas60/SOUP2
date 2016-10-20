@@ -42,6 +42,12 @@ type SiteParameters
   real(dp)                 :: new_rln
   real(dp)                 :: new_cov
   integer                  :: cohorts
+  real(dp), dimension(12)  :: mnthtmp
+  real(dp), dimension(12)  :: mnthprc
+  real(dp), dimension(12)  :: mnthhum
+  real(dp), dimension(12)  :: emnthtmp
+  real(dp), dimension(12)  :: emnthprc
+  real(dp), dimension(12)  :: emnthhum
   integer, dimension(max_cohorts,max_cohorts) :: co2ftmap
   real(dp), dimension(max_pftps)              :: ftcov
 end type

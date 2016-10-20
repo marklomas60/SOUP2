@@ -227,7 +227,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
       call SET_CLIMATE(xtmpv,xprcv,xhumv,xcldv,withcloudcover,yearv,iyear, &
  tmp,prc,hum,cld,thty_dys,yr0,year)
-
+      
 !----------------------------------------------------------------------!
 ! Set land use through ftprop.                                         !
 !----------------------------------------------------------------------!
@@ -240,7 +240,8 @@ do site=1,sites
       call MKDLIT()
 
       call RESTRICT_COHORT_NUMBERS()
-      
+     
+      call SEASONALITY(tmp,prc,cld) 
 !----------------------------------------------------------------------!
 ! Initialisations that were in doly at the beginning of the year       !
 !----------------------------------------------------------------------!
