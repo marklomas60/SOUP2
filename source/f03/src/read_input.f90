@@ -506,6 +506,50 @@ pft_tab(ft)%stemx = 0.0
 pft_tab(ft)%gr0 = 0.0
 pft_tab(ft)%grf = 0.0
 pft_tab(ft)%ppm0 = 0.0
+pft_tab(ft)%sowthresh(1)=0.0
+pft_tab(ft)%sowthresh(2)=0.0
+pft_tab(ft)%lethal(1)=0.0
+pft_tab(ft)%lethal(2)=0.0
+pft_tab(ft)%cardinal(1)=0.0
+pft_tab(ft)%cardinal(2)=0.0
+pft_tab(ft)%cardinal(3)=0.0
+pft_tab(ft)%cardinal(4)=0.0
+pft_tab(ft)%cardinal(5)=0.0
+pft_tab(ft)%cardinal(6)=0.0
+pft_tab(ft)%cardinal(7)=0.0
+pft_tab(ft)%cardinal(8)=0.0
+pft_tab(ft)%cardinal(9)=0.0
+pft_tab(ft)%croptype(1)=0.0
+pft_tab(ft)%croptype(2)=0.0
+pft_tab(ft)%photoperiod(1)=0.0
+pft_tab(ft)%photoperiod(2)=0.0
+pft_tab(ft)%photoperiod(3)=0.0
+pft_tab(ft)%photoperiod(4)=0.0
+pft_tab(ft)%photoperiod(5)=0.0
+pft_tab(ft)%photoperiod(6)=0.0
+pft_tab(ft)%croprange(1)=0.0
+pft_tab(ft)%croprange(2)=0.0
+pft_tab(ft)%croprange(3)=0.0
+pft_tab(ft)%croprange(4)=0.0
+pft_tab(ft)%cropphen(1)=0.0
+pft_tab(ft)%cropphen(2)=0.0
+pft_tab(ft)%cropphen(3)=0.0
+pft_tab(ft)%cropphen(4)=0.0
+pft_tab(ft)%cropphen(5)=0.0
+pft_tab(ft)%cropphen(6)=0.0
+pft_tab(ft)%harvest(1)=0.0
+pft_tab(ft)%harvest(2)=0.0
+pft_tab(ft)%harvest(3)=0.0
+pft_tab(ft)%harvest(4)=0.0
+pft_tab(ft)%harvest(5)=0.0
+pft_tab(ft)%harvest(6)=0.0
+pft_tab(ft)%irrig(1)=0.0
+pft_tab(ft)%irrig(2)=0.0
+pft_tab(ft)%fertuse(1)=0.0
+pft_tab(ft)%fertuse(2)=0.0
+pft_tab(ft)%fertuse(3)=0.0
+pft_tab(ft)%fertuse(4)=0.0
+pft_tab(ft)%fertuse(5)=0.0
 
 ft = 2
 pft_tab(ft)%c3c4 = 0
@@ -533,6 +577,50 @@ pft_tab(ft)%stemx = 0.0
 pft_tab(ft)%gr0 = 0.0
 pft_tab(ft)%grf = 0.0
 pft_tab(ft)%ppm0 = 0.0
+pft_tab(ft)%sowthresh(1)=0.0
+pft_tab(ft)%sowthresh(2)=0.0
+pft_tab(ft)%lethal(1)=0.0
+pft_tab(ft)%lethal(2)=0.0
+pft_tab(ft)%cardinal(1)=0.0
+pft_tab(ft)%cardinal(2)=0.0
+pft_tab(ft)%cardinal(3)=0.0
+pft_tab(ft)%cardinal(4)=0.0
+pft_tab(ft)%cardinal(5)=0.0
+pft_tab(ft)%cardinal(6)=0.0
+pft_tab(ft)%cardinal(7)=0.0
+pft_tab(ft)%cardinal(8)=0.0
+pft_tab(ft)%cardinal(9)=0.0
+pft_tab(ft)%croptype(1)=0.0
+pft_tab(ft)%croptype(2)=0.0
+pft_tab(ft)%photoperiod(1)=0.0
+pft_tab(ft)%photoperiod(2)=0.0
+pft_tab(ft)%photoperiod(3)=0.0
+pft_tab(ft)%photoperiod(4)=0.0
+pft_tab(ft)%photoperiod(5)=0.0
+pft_tab(ft)%photoperiod(6)=0.0
+pft_tab(ft)%croprange(1)=0.0
+pft_tab(ft)%croprange(2)=0.0
+pft_tab(ft)%croprange(3)=0.0
+pft_tab(ft)%croprange(4)=0.0
+pft_tab(ft)%cropphen(1)=0.0
+pft_tab(ft)%cropphen(2)=0.0
+pft_tab(ft)%cropphen(3)=0.0
+pft_tab(ft)%cropphen(4)=0.0
+pft_tab(ft)%cropphen(5)=0.0
+pft_tab(ft)%cropphen(6)=0.0
+pft_tab(ft)%harvest(1)=0.0
+pft_tab(ft)%harvest(2)=0.0
+pft_tab(ft)%harvest(3)=0.0
+pft_tab(ft)%harvest(4)=0.0
+pft_tab(ft)%harvest(5)=0.0
+pft_tab(ft)%harvest(6)=0.0
+pft_tab(ft)%irrig(1)=0.0
+pft_tab(ft)%irrig(2)=0.0
+pft_tab(ft)%fertuse(1)=0.0
+pft_tab(ft)%fertuse(2)=0.0
+pft_tab(ft)%fertuse(3)=0.0
+pft_tab(ft)%fertuse(4)=0.0
+pft_tab(ft)%fertuse(5)=0.0
 
 !----------------------------------------------------------------------!
 ! Read in functional type parameterisation.                            !
@@ -580,9 +668,9 @@ if (n_fields(st1)==1) then
         stop
       endif
 
-    if (n_fields(st1)/=27) then
+    if (n_fields(st1)/=71) then
       write(*,'('' PROGRAM TERMINATED'')')
-      write(*,*) 'The ft parameterisation must contain 27 fields.'
+      write(*,*) 'The ft parameterisation must contain 71 fields.'
       write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
       stop
     endif
@@ -595,7 +683,23 @@ if (n_fields(st1)==1) then
  pft_tab(ft)%lmor,pft_tab(ft)%lrat,pft_tab(ft)%bbmem,&
  pft_tab(ft)%bb0,pft_tab(ft)%bbmax,pft_tab(ft)%bblim,&
  pft_tab(ft)%senm,pft_tab(ft)%sens,pft_tab(ft)%senlim,&
- pft_tab(ft)%stemx,pft_tab(ft)%gr0,pft_tab(ft)%grf,pft_tab(ft)%ppm0
+ pft_tab(ft)%stemx,pft_tab(ft)%gr0,pft_tab(ft)%grf,pft_tab(ft)%ppm0,&
+ pft_tab(ft)%sowthresh(1),pft_tab(ft)%sowthresh(2),pft_tab(ft)%lethal(1),&
+ pft_tab(ft)%lethal(2),pft_tab(ft)%cardinal(1),pft_tab(ft)%cardinal(2),&
+ pft_tab(ft)%cardinal(3),pft_tab(ft)%cardinal(4),pft_tab(ft)%cardinal(5),&
+ pft_tab(ft)%cardinal(6),pft_tab(ft)%cardinal(7),pft_tab(ft)%cardinal(8),&
+ pft_tab(ft)%cardinal(9),pft_tab(ft)%croptype(1),pft_tab(ft)%croptype(2),&
+ pft_tab(ft)%photoperiod(1),pft_tab(ft)%photoperiod(2),pft_tab(ft)%photoperiod(3),&
+ pft_tab(ft)%photoperiod(4),pft_tab(ft)%photoperiod(5),pft_tab(ft)%photoperiod(6),&
+ pft_tab(ft)%croprange(1),pft_tab(ft)%croprange(2),pft_tab(ft)%croprange(3),&
+ pft_tab(ft)%croprange(4),pft_tab(ft)%cropphen(1),pft_tab(ft)%cropphen(2),&
+ pft_tab(ft)%cropphen(3),pft_tab(ft)%cropphen(4),pft_tab(ft)%cropphen(5),&
+ pft_tab(ft)%cropphen(6),pft_tab(ft)%harvest(1),pft_tab(ft)%harvest(2),&
+ pft_tab(ft)%harvest(3),pft_tab(ft)%harvest(4),pft_tab(ft)%harvest(5),&
+ pft_tab(ft)%harvest(6),pft_tab(ft)%irrig(1),pft_tab(ft)%irrig(2),&
+ pft_tab(ft)%fertuse(1),pft_tab(ft)%fertuse(2),pft_tab(ft)%fertuse(3),&
+ pft_tab(ft)%fertuse(4),pft_tab(ft)%fertuse(5)
+
 
     if (pft_tab(ft)%mort>max_years) then
       write(*,'('' PROGRAM TERMINATED'')')
@@ -654,9 +758,9 @@ else
         stop
       endif
 
-      if (n_fields(st1)/=27) then
+      if (n_fields(st1)/=71) then
         write(*,'('' PROGRAM TERMINATED'')')
-        write(*,*) 'The ft parameterisation must contain 27 fields.'
+        write(*,*) 'The ft parameterisation must contain 71 fields.'
         write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
         stop
       endif
@@ -668,7 +772,23 @@ else
  pft_tab(ft)%lls,pft_tab(ft)%sls,pft_tab(ft)%rls,pft_tab(ft)%lmor,&
  pft_tab(ft)%lrat,pft_tab(ft)%bbmem,pft_tab(ft)%bb0,pft_tab(ft)%bbmax,&
  pft_tab(ft)%bblim,pft_tab(ft)%senm,pft_tab(ft)%sens,pft_tab(ft)%senlim,&
- pft_tab(ft)%stemx,pft_tab(ft)%gr0,pft_tab(ft)%grf,pft_tab(ft)%ppm0
+ pft_tab(ft)%stemx,pft_tab(ft)%gr0,pft_tab(ft)%grf,pft_tab(ft)%ppm0,&
+ pft_tab(ft)%sowthresh(1),pft_tab(ft)%sowthresh(2),pft_tab(ft)%lethal(1),&
+ pft_tab(ft)%lethal(2),pft_tab(ft)%cardinal(1),pft_tab(ft)%cardinal(2),&
+ pft_tab(ft)%cardinal(3),pft_tab(ft)%cardinal(4),pft_tab(ft)%cardinal(5),&
+ pft_tab(ft)%cardinal(6),pft_tab(ft)%cardinal(7),pft_tab(ft)%cardinal(8),&
+ pft_tab(ft)%cardinal(9),pft_tab(ft)%croptype(1),pft_tab(ft)%croptype(2),&
+ pft_tab(ft)%photoperiod(1),pft_tab(ft)%photoperiod(2),pft_tab(ft)%photoperiod(3),&
+ pft_tab(ft)%photoperiod(4),pft_tab(ft)%photoperiod(5),pft_tab(ft)%photoperiod(6),&
+ pft_tab(ft)%croprange(1),pft_tab(ft)%croprange(2),pft_tab(ft)%croprange(3),&
+ pft_tab(ft)%croprange(4),pft_tab(ft)%cropphen(1),pft_tab(ft)%cropphen(2),&
+ pft_tab(ft)%cropphen(3),pft_tab(ft)%cropphen(4),pft_tab(ft)%cropphen(5),&
+ pft_tab(ft)%cropphen(6),pft_tab(ft)%harvest(1),pft_tab(ft)%harvest(2),&
+ pft_tab(ft)%harvest(3),pft_tab(ft)%harvest(4),pft_tab(ft)%harvest(5),&
+ pft_tab(ft)%harvest(6),pft_tab(ft)%irrig(1),pft_tab(ft)%irrig(2),&
+ pft_tab(ft)%fertuse(1),pft_tab(ft)%fertuse(2),pft_tab(ft)%fertuse(3),&
+ pft_tab(ft)%fertuse(4),pft_tab(ft)%fertuse(5)
+
 
       if (pft_tab(ft)%sla<0.0) then
         pft_tab(ft)%sla = 10.0**(2.35 - &

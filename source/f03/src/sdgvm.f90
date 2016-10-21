@@ -202,7 +202,7 @@ do site=1,sites
 ! Initialise the system state.                                         !
 !----------------------------------------------------------------------!
     call INITIALISE_STATE(initise,nft,cluse,xtmpv,soilt)
-    
+        
     do iyear=1,nyears
 
       year = yearv(iyear)
@@ -240,13 +240,13 @@ do site=1,sites
       call MKDLIT()
 
       call RESTRICT_COHORT_NUMBERS()
-     
-      call SEASONALITY(tmp,prc,cld) 
+      
+      call SEASONALITY(tmp,prc,cld,nyears) 
 !----------------------------------------------------------------------!
 ! Initialisations that were in doly at the beginning of the year       !
 !----------------------------------------------------------------------!
       do ft=1,ssp%cohorts
-
+        
         leafnpp(ft) = 0.0
         stemnpp(ft) = 0.0
         rootnpp(ft) = 0.0
@@ -308,7 +308,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 
           do ft=1,ssp%cohorts
-
+          
           fpr=0.0
           ssp%cohort = ft
 
