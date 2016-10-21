@@ -241,7 +241,7 @@ do site=1,sites
 
       call RESTRICT_COHORT_NUMBERS()
       
-      call SEASONALITY(tmp,prc,cld,nyears) 
+      call SEASONALITY(tmp,prc,cld) 
 !----------------------------------------------------------------------!
 ! Initialisations that were in doly at the beginning of the year       !
 !----------------------------------------------------------------------!
