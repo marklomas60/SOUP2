@@ -135,7 +135,9 @@ do site=1,sites
   ssp%jday = 5000
   speedc = xspeedc
   lat = lat_lon(site,1)
+  ssp%lat=lat
   lon = lat_lon(site,2)
+  ssp%lon=lon
   seed1 = xseed1
   seed2 = 2*seed1
   seed3 = 3*seed1
@@ -241,7 +243,7 @@ do site=1,sites
 
       call RESTRICT_COHORT_NUMBERS()
       
-      call SEASONALITY(tmp,prc,cld) 
+      call SEASONALITY(tmp,prc,cld,thty_dys,nft,year) 
 !----------------------------------------------------------------------!
 ! Initialisations that were in doly at the beginning of the year       !
 !----------------------------------------------------------------------!
