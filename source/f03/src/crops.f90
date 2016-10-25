@@ -42,22 +42,28 @@ contains
 !!
 !! REFERENCES:
 !!
-!!     Waha et al 2012, Global Ecology and Biogeography 21:247-259
-!!     van Bussel et al 2015, Global Ecology and Biogeography (earlyview)
+!! Waha et al 2012, Global Ecology and Biogeography 21:247-259
+!! van Bussel et al 2015, Global Ecology and Biogeography (earlyview)
 !!
-!! ssp%emnthtmp(12)  IN  (20-year exp-mean monthly temperatures)
-!! ssp%emnthprc(12)  IN  (20-year exp-mean monthly precipitation)
+!! tmp(12,31)        IN  Daily Temperature
+!! prc(12,31)        IN  Daily Precipitation
+!! cld(12)           IN  Monthly Cloud cover
+!! nft               IN  Number of plant functional types
+!! ssp%emnthtmp(12)      (20-year exp-mean monthly temperatures)
+!! ssp%emnthprc(12)      (20-year exp-mean monthly precipitation)
+!! museas                Annual average of exponential weighted *
+!! seastmp               Seasonal variation coefficient of temperature
+!! seasprc               Seasonal variation coefficient of precipitation
 !! iseas                 Seasonality type.1 for precipitation,2 for temperature
 !! mdoy(12)              First day of month in Julian days
 !! mmid(12)              Midday of month in Julian days
 !! hrs(12)               Daylight hours for the midday of each month
 !! mnth                  Month counter
-!! ssp%lat           IN   Site latitude
+!! ssp%lat               Site latitude
 !! q(12)                 Monthly photon flux density
 !! pet(12)               Monthly ratio precip/(potential evapotranspiration)
 !! mnthhum(12)       IN  (mean monthly humidity)
 !! sowday(*)         OUT Sow day
-!! nft          input Number of plant functional types (PFTs)
 !! sumtsow(*)   input Minimum temperature thresholds for sowing
 !! wintsow(*)   input Maximum temperature thresholds for sowing
 !! ndays(12)    input Number of days per month
@@ -72,8 +78,8 @@ contains
 !! vernsat(*)  output Max vernalisation requirement per PFT (days)
 !! verbose      input Logical: write out values or not
 !!
-!! @author Lyla 
-!! @date 
+!! @author Lyla,EPK 
+!! @date Oct 2016
 !----------------------------------------------------------------------!
 subroutine seasonality(tmp,prc,cld,thty_dys,nft,year)
 !**********************************************************************!
@@ -158,47 +164,41 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       endif 
     enddo ! ft=1,nft
   endif ! seasonality
-  
+    
 
 end subroutine seasonality
 
 
 !**********************************************************************!
 !                                                                      !
-!                     getwet :: crops                                  !
+!                         getwet :: crops                              !
 !                     ---------------------                            !
 !                                                                      !
 ! subroutine getwet                                                    !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief 
-!! @details Calculate seasonality as per van Bussel's thesis (2011)
+!! @details Calculate ratios of precipitation to evt
+!! van Bussel (2011) discusses determination of start of growing period
+!! in her chapter 5, section 2.2.2, and the sowing day should be the first
+!! day where precip>0.1mm of that wet month.
+!! 
+!! We depart from van Bussel in that we do not use Priestley-Taylor PET, 
+!! but instead lift Penman-Montheith code from of dolyday.
+!!
+!! REFERENCES:
+!!
+!! Waha et al 2012, Global Ecology and Biogeography 21:247-259
+!! van Bussel et al 2015, Global Ecology and Biogeography (earlyview)
 !!
 !! hrs(12)      IN    Daylight hours for the midday of each month
 !! q(12)        IN    Monthly photon flux density
 !! wet          OUT   Month index for start of wet season
 !! pet(12)      OUT   Monthly ratio precip/(potential evapotranspiration)
-!! PARAMETERS: 
+!! 
 !!
-!!      ht           input (Standard height for Penman-Monteith equation)
-!!      avtmp(12)    input (20-year exp-mean monthly temperatures)
-!!      avprc(12)    input (20-year exp-mean monthly precipitation)
-!!      mnthhum(12)  input (Monthly relative humidity for this year)
-!!      q(12)        input total photon flux density for mid-months
-!!      wet         output Month index for start of wet season
-!!      pet         output Monthly ratio precip/(potential evapotranspiration)
-!!
-!! NOTES:
-!!
-!!      van Bussel (2011) discusses determination of start of growing period
-!!      in her chapter 5, section 2.2.2, and the sowing day should be the first
-!!      day where precip>0.1mm of that wet month.
-!!
-!!      We depart from van Bussel in that we do not use Priestley-Taylor PET, 
-!!      but instead lift Penman-Montheith code from of dolyday.
-!!
-!! @author Lyla 
-!! @date 
+!! @author Lyla,EPK 
+!! @date Oct 2016
 !----------------------------------------------------------------------!
 subroutine getwet(hrs,q,wet,pet)
 !**********************************************************************!    
@@ -261,7 +261,7 @@ end subroutine getwet
 
 !**********************************************************************!
 !                                                                      !
-!                     summerday :: crops                               !
+!                        summerday :: crops                            !
 !                     ---------------------                            !
 !                                                                      !
 ! function summerday                                                   !
@@ -274,12 +274,12 @@ end subroutine getwet
 !! between the average monthly temperatures to get the mean day.
 !!
 !!
-!! thresh       IN (threshold temperature for summer)
-!! mmid(12)     IN (Day numbers associated with avtmp)
+!! thresh       IN threshold temperature for summer
+!! mmid(12)     IN Midday of month in Julian days
 !!
 !!
-!! @author Lyla 
-!! @date
+!! @author Lyla,EPK 
+!! @date Oct 2016
 !----------------------------------------------------------------------!
 integer function summerday(thresh,mmid)
 !**********************************************************************!
@@ -309,26 +309,23 @@ end function summerday
 
 !**********************************************************************!
 !                                                                      !
-!                     winterday :: crops                               !
+!                       winterday :: crops                             !
 !                     ---------------------                            !
 !                                                                      !
 ! function winterday                                                   !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Find the start day of winter as defined by a threshold temperature
-!! @details van Bussel (2011, thesis) discusses determination of sowing dates
-!! in her chapter 5, section 2.2.2; here we find the day number when
-!! winter begins (temperature>=threshold).  We linearly interpolate
-!! between the average monthly temperatures to get the mean day.
+!! @details 
 !!
 !!
 !!
-!! thresh       IN (threshold temperature for winter)
-!! mmid(12)     IN (Day numbers associated with avtmp)
+!! thresh       IN threshold temperature for winter
+!! mmid(12)     IN Midday of month in Julian days
 !!
 !!
-!! @author Lyla 
-!! @date
+!! @author Lyla,EPK 
+!! @date Oct 2016
 !----------------------------------------------------------------------!
 integer function winterday(thresh,mmid)
 !**********************************************************************!

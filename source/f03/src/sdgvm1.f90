@@ -155,10 +155,10 @@ end subroutine set_landuse
 !! arrays.
 !! It also calculates the monthly average of temperature,precipitation
 !! and humidity.It uses that info to calculate the exponentially-weighted
-!! 20-year monthly means for crops which is assigned to site structure
-!! variable ssp
-!! @author Mark Lomas
-!! @date Feb 2006
+!! 20-year monthly means which are assigned to site structure
+!! variable ssp.Those values are required for the crop processes.
+!! @author Mark Lomas,EPK
+!! @date Oct 2016
 !----------------------------------------------------------------------!
 subroutine set_climate(xtmpv,xprcv,xhumv,xcldv,withcloudcover,yearv,&
  iyear,tmp,prc,hum,cld,thty_dys,yr0,year)
