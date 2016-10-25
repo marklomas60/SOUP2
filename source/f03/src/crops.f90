@@ -64,6 +64,9 @@ contains
 !! pet(12)               Monthly ratio precip/(potential evapotranspiration)
 !! mnthhum(12)       IN  (mean monthly humidity)
 !! sowday(*)         OUT Sow day
+!! msow                  Sowing month
+!! mcoldest              Coldest month
+!! icoldest              Midday of coldest month
 !! sumtsow(*)   input Minimum temperature thresholds for sowing
 !! wintsow(*)   input Maximum temperature thresholds for sowing
 !! ndays(12)    input Number of days per month
@@ -90,7 +93,10 @@ integer  :: thty_dys,nft,year
 integer  :: sowday(nft) !Have to change to output
 
 real(dp) :: museas,seastmp,seasprc,hrs(12)
-integer  :: iseas,mdoy(12),mmid(12),mnth,day,ft
+integer  :: iseas,mdoy(12),mmid(12),mnth,day,ft,k
+integer  :: msow,mcoldest,icoldest,nwarm,mcold,ntot,nvern,i,j
+real(dp) :: fv,vdays,vegphu(12),repphu(12),totveg,wft,wfp
+logical  :: dead
 real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
 !----------------------------------------------------------------------!
 
@@ -146,7 +152,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
     do day=1,no_days(year,mnth,thty_dys)
       if (sowday(3).eq.0.and.prc(mnth,day).gt.0.1d0) &
         sowday(3:nft)=day-1+mdoy(mnth)
-    enddo ! day=1,ndays(mnth)
+    enddo ! day=1,no_days(year,mnth,thty_dys)
   elseif (iseas.eq.2) then ! sowing depends on temperature
     pet(:)=1.0d0
     do ft=3,nft ! there will be crop-specific threshold temperatures
@@ -165,7 +171,62 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
     enddo ! ft=1,nft
   endif ! seasonality
     
+! Estimate vernalisation days
+  do ft=3,nft
+! Aseasonal climate; just sow on new years day as per van Bussel 2011 p 95 
+    if (sowday(ft).eq.0) sowday(ft)=1
+    msow=1; mcoldest=1
+! Get the sowing month and the coldest month
+    do mnth=1,12
+      if (sowday(ft).ge.mdoy(mnth)) msow=mnth
+      if (ssp%emnthtmp(mnth).lt.ssp%emnthtmp(mcoldest)) mcoldest=mnth
+    enddo ! mnth=1,12
+    icoldest=mmid(mcoldest);
+    if (iseas.lt.2) icoldest=0
+    fv=1.0-pft_tab(ft)%croptype(2); vdays=0.0; dead=.FALSE.
+    j=mdoy(msow)-1; vegphu(:)=0.0; repphu(:)=0.0
+    nwarm=0; mcold=0; ntot=0; totveg=0.0; nvern=0
+   
+    do k=0,11 !6+5*croptype(2,ft)
+      if (dead) cycle
+      mnth=msow+k
+      if (mnth.gt.12) mnth=mnth-12
+      dead=(ssp%emnthtmp(mnth).le.pft_tab(ft)%lethal(1).or. &
+        ssp%emnthtmp(mnth).ge.pft_tab(ft)%lethal(2))
+      if (dead) cycle
+      if (mcold.gt.0) cycle
+      call wangengel(pft_tab(ft)%cardinal(1),pft_tab(ft)%cardinal(2), &
+        pft_tab(ft)%cardinal(3),ssp%emnthtmp(mnth),pft_tab(ft)%croptype(1), &
+        pft_tab(ft)%photoperiod(1),pft_tab(ft)%photoperiod(2),hrs(mnth),wft,wfp)
+      if (fv.lt.0.95d0) then
+        do i=1,no_days(year,mnth,thty_dys)
+          j=j+1
+          if (j.lt.sowday(ft)) cycle
+          if (fv.lt.0.95d0) call streck(pft_tab(ft)%cardinal(4), &
+            pft_tab(ft)%cardinal(5),pft_tab(ft)%cardinal(6), &
+            ssp%emnthtmp(mnth),pft_tab(ft)%croptype(1),pft_tab(ft)%photoperiod(3), &
+            pft_tab(ft)%photoperiod(4),dayl(ssp%lat,j),vdays,fv)
+            totveg=totveg+ssp%emnthtmp(mnth)*fv*wft*wfp
+            cycle
+        enddo ! i=1,no_days(year,mnth,thty_dys)
+        nvern=nvern+1
+      else
+        totveg=totveg+ssp%emnthtmp(mnth)*no_days(year,mnth,thty_dys)*wft*wfp
+        call wangengel(pft_tab(ft)%cardinal(7),pft_tab(ft)%cardinal(8), &
+          pft_tab(ft)%cardinal(9),ssp%emnthtmp(mnth),pft_tab(ft)%croptype(1), &
+          pft_tab(ft)%photoperiod(5),pft_tab(ft)%photoperiod(6),hrs(mnth),wft,wfp)
+        repphu(mnth)=repphu(mnth)+ssp%emnthtmp(mnth)*no_days(year,mnth,thty_dys)*wft*wfp
+      endif
+      vegphu(mnth)=totveg
+      if (fv.gt.0.95d0) then
+        if (nwarm.gt.0.and.repphu(mnth).le.0.0d0) mcold=mnth
+        if (mcold.eq.0.and.repphu(mnth).gt.0.0d0) nwarm=nwarm+1
+      endif ! fv.gt.0.995d0
+      if (mcold.eq.0) ntot=ntot+1
+    enddo ! k=0,11
 
+
+  enddo ! ft=3,nft
 end subroutine seasonality
 
 
@@ -350,6 +411,130 @@ integer  :: lasttmp,lastm,lastday,m,thistmp
       
   return
   end function winterday
+
+
+!**********************************************************************!
+!                                                                      !
+!                       wangengel :: crops                             !
+!                     ---------------------                            !
+!                                                                      !
+! subroutine wangengel                                                 !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Get temperature and photoperiod function values for crops
+!! @details These functions are from Wang and Engel 1998 (Agri Sys 58:1-24).
+!! The sum of the product of the temperature and photoperiod functions gives 
+!! the effective physiological days.
+!!
+!!
+!!
+!! @author Lyla,EPK 
+!! @date Oct 2016
+!----------------------------------------------------------------------!
+subroutine wangengel(tmin,topt,tmax,tmp,dtype,popt,pcrit,p,ft,fp)
+!**********************************************************************!
+implicit none
+real(dp) :: tmin,topt,tmax ! Cardinal temperatures
+real(dp) :: popt,pcrit,p ! Optimal, critical and current photoperiod
+real(dp) :: tmp     ! today's mean temperature, input
+real(dp) :: ft,fp   ! temperature and photoperiod functions, output
+real(dp) :: alpha  ! exponent in temperature response function, internal
+real(dp) :: t1,t2 ! internal
+real(dp) :: dtype ! 1 for long-day, -1 for short-day, 0 for day-neutral plants
+
+ft=0.0
+! Photoperiod effect
+fp=max(0.0,1-exp(-dtype*4.0*(p-pcrit)/abs(popt-pcrit)))
+if (tmax.gt.tmin) then
+! NB ft will be zero for tmp outside the range tmin to tmax inclusive
+  if (tmp.le.tmax.and.tmp.ge.tmin) then
+    alpha=log(2.0)/log((tmax-tmin)/(topt-tmin))
+    t1=(topt-tmin)**alpha
+    t2=(tmp-tmin)**alpha
+    ft=(2*t2*t1-(t2**2))/(t1**2)
+  endif ! tmp.le.tmax.and.tmp.ge.tmin
+else
+endif ! vtmax.gt.vtmin
+
+return
+  
+end subroutine wangengel
+
+
+!**********************************************************************!
+!                                                                      !
+!                       streck :: crops                                !
+!                     ---------------------                            !
+!                                                                      !
+! subroutine streck                                                    !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Get vernalisation factors for crops
+!! @details  Following Streck et al 2003, Ag For Meteor 115:139-150
+!! Equations 3 and 4 (temperature function), 5 (photoperiod function)
+!! These functions are from Wang and Engel 1998 (Agri Sys 58:1-24).
+!! In some papers including Streck et al's first one (below) the temperature
+!! function has a typographical error (a minus sign is missing).
+!! The sum of the product of the temperature and photoperiod functions gives 
+!! the effective vernalised days VD
+!! which one can use to get the vernalization response function (Eq 10)
+!! or Eq 2 in Streck et al 2003 Agron J 95:155-159
+!!
+!! Streck et al's vernalisation function and Wang and Engel's functions
+!! are used in a number of models:
+!!
+!! JULES-SUCROS land surface model 
+!!    (van den Hoof et al 2011 Ag For Meteor 151:137-153)
+!! DANUBIA crop growth model (Lenz-Wiedemann et al 2010 Ecol Model 221:314-329)
+!! FROSTOL wheat model (Bergjord et al 2008 Eur J Agr 28:321-330)
+!! SPACSYS C and N cycling model (Bingham and Wu 2011 Eur J Agr 34:181-189) 
+!! CANDY-PLUS C, N and biomass model (Kruger et al 2013 Vadose Zone J 12)
+!! Liu's pasture legume model (Liu 2007 Field Crops Res 101:331-342)
+!! 
+!! vtmin,vtopt,vtmax  input Cardinal temperatures for vernalisation
+!! tmp                input Current mean daily temperature
+!! popt,pcrit         input Optimal and critical photoperiod
+!! p                  input Current photoperiod
+!! dtype              input -1: short-day, 1: long-day, 0: day-neutral
+!! vdays       input/output Accumulated vernalisation days
+!! fv                output Current vernalisation day
+!!
+!!
+!!
+!! @author Lyla,EPK 
+!! @date Oct 2016
+!----------------------------------------------------------------------!
+subroutine streck(vtmin,vtopt,vtmax,tmp,dtype,popt,pcrit,p,vdays,fv)
+!**********************************************************************!
+implicit none
+real(dp) :: vtmin,vtopt,vtmax
+real(dp) :: tmp     ! today's mean temperature, input
+real(dp) :: vdays   ! accumulated effective vernalisation days, input/output
+real(dp) :: valpha  ! exponent in temperature response function, internal
+real(dp) :: dtype ! 1 for long-day, -1 for short-day, 0 for day-neutral plants
+real(dp) :: popt,pcrit ! photoperiod parameters, input
+real(dp) :: p ! today's photoperiod, input
+real(dp) :: vd5,ft,fp   ! internal
+real(dp) :: fv   ! vernalisation response function, output
+
+if (vtmax.gt.vtmin) then
+! NB increment will be zero for tmp outside the range vtmin to vtmax inclusive
+! therefore the heat sum vdays will not be incremented and fv will not change
+  if (tmp.le.vtmax.and.tmp.ge.vtmin) then
+    call wangengel(vtmin,vtopt,vtmax,tmp,dtype,popt,pcrit,p,ft,fp)
+    vdays=vdays+ft*fp
+    vd5=vdays**5
+    fv=(vd5)/((22.5**5)+vd5)
+  endif ! tmp.le.vtmax.and.tmp.ge.vtmin
+else
+  vdays=0.0d0; fv=1.0d0
+endif ! vtmax.gt.vtmin
+ 
+return
+end subroutine streck
+
+
+
 
 
 
