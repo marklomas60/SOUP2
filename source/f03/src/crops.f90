@@ -81,7 +81,7 @@ contains
 !! vernsat(*)  output Max vernalisation requirement per PFT (days)
 !! verbose      input Logical: write out values or not
 !!
-!! @author Lyla,EPK 
+!! @author LLT,EPK 
 !! @date Oct 2016
 !----------------------------------------------------------------------!
 subroutine seasonality(tmp,prc,cld,thty_dys,nft,year)
@@ -258,7 +258,7 @@ end subroutine seasonality
 !! pet(12)      OUT   Monthly ratio precip/(potential evapotranspiration)
 !! 
 !!
-!! @author Lyla,EPK 
+!! @author LLT,EPK 
 !! @date Oct 2016
 !----------------------------------------------------------------------!
 subroutine getwet(hrs,q,wet,pet)
@@ -339,7 +339,7 @@ end subroutine getwet
 !! mmid(12)     IN Midday of month in Julian days
 !!
 !!
-!! @author Lyla,EPK 
+!! @author LLT,EPK 
 !! @date Oct 2016
 !----------------------------------------------------------------------!
 integer function summerday(thresh,mmid)
@@ -385,7 +385,7 @@ end function summerday
 !! mmid(12)     IN Midday of month in Julian days
 !!
 !!
-!! @author Lyla,EPK 
+!! @author LLT,EPK 
 !! @date Oct 2016
 !----------------------------------------------------------------------!
 integer function winterday(thresh,mmid)
@@ -428,7 +428,7 @@ integer  :: lasttmp,lastm,lastday,m,thistmp
 !!
 !!
 !!
-!! @author Lyla,EPK 
+!! @author LLT,EPK 
 !! @date Oct 2016
 !----------------------------------------------------------------------!
 subroutine wangengel(tmin,topt,tmax,tmp,dtype,popt,pcrit,p,ft,fp)
@@ -501,7 +501,7 @@ end subroutine wangengel
 !!
 !!
 !!
-!! @author Lyla,EPK 
+!! @author LLT,EPK 
 !! @date Oct 2016
 !----------------------------------------------------------------------!
 subroutine streck(vtmin,vtopt,vtmax,tmp,dtype,popt,pcrit,p,vdays,fv)

@@ -38,6 +38,7 @@ type PftParameters
   real(dp)               :: gr0
   real(dp)               :: grf
   real(dp)               :: ppm0 ! Plant density
+  integer                :: cropft
   real(dp),dimension(2)  :: sowthresh
   real(dp),dimension(2)  :: lethal
   real(dp),dimension(9)  :: cardinal
