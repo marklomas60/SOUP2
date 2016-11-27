@@ -134,7 +134,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
   call pfd(ssp%lat,15,hrs(1),cld(1),qdir,qdiff,q(1)) ! photon flux density
   do mnth=2,12
     mdoy(mnth)=mdoy(mnth-1)+no_days(year,mnth-1,thty_dys)
-    mmid(mnth)=int(no_days(year,mnth-1,thty_dys)/2)+mdoy(mnth)-1
+    mmid(mnth)=int(no_days(year,mnth,thty_dys)/2)+mdoy(mnth)-1
     hrs(mnth)=dayl(ssp%lat,mmid(mnth))
     call pfd(ssp%lat,mmid(mnth),hrs(mnth),cld(mnth),qdir,qdiff,q(mnth))
   enddo
@@ -170,7 +170,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       endif 
     enddo ! ft=1,nft
   endif ! seasonality
-    
+      
 ! Estimate vernalisation days
   do ft=3,nft
 ! Aseasonal climate; just sow on new years day as per van Bussel 2011 p 95 
