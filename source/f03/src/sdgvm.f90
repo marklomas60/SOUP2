@@ -206,7 +206,7 @@ do site=1,sites
     call INITIALISE_STATE(initise,nft,cluse,xtmpv,soilt)
     
     do iyear=1,nyears
-
+      
       year = yearv(iyear)
 
       ssp%iyear = iyear

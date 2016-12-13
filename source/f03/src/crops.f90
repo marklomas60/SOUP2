@@ -44,6 +44,7 @@ contains
 !!
 !! Waha et al 2012, Global Ecology and Biogeography 21:247-259
 !! van Bussel et al 2015, Global Ecology and Biogeography (earlyview)
+!! Wang and Engel 1998 (Agri Sys 58:1-24)
 !!
 !! tmp(12,31)        IN  Daily Temperature
 !! prc(12,31)        IN  Daily Precipitation
@@ -65,6 +66,7 @@ contains
 !! mnthhum(12)       IN  (mean monthly humidity)
 !! sowday(*)         OUT Sow day
 !! msow                  Sowing month
+!! daysiny               Days in a year
 !! mcoldest              Coldest month
 !! icoldest              Midday of coldest month
 !! sumtsow(*)   input Minimum temperature thresholds for sowing
@@ -91,15 +93,23 @@ real(dp) :: tmp(12,31),prc(12,31),cld(12)
 integer  :: thty_dys,nft,year
 
 integer  :: sowday(nft) !Have to change to output
+real(dp) :: cropgdd(2,nft) !Have to change to output
 
 real(dp) :: museas,seastmp,seasprc,hrs(12)
-integer  :: iseas,mdoy(12),mmid(12),mnth,day,ft,k
-integer  :: msow,mcoldest,icoldest,nwarm,mcold,ntot,nvern,i,j
-real(dp) :: fv,vdays,vegphu(12),repphu(12),totveg,wft,wfp
+integer  :: iseas,mdoy(12),mmid(12),mnth,day,ft,k,daysiny
+integer  :: msow,mcoldest,icoldest,nwarm,mcold,ntot,nvern,i,j,m
+integer  :: nydays,slen(12)
+real(dp) :: fv,vdays,vegphu(12),repphu(12),totveg,wft,wfp,vrat
+real(dp) :: totphu(12),targ,totrep
 logical  :: dead
 real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
 !----------------------------------------------------------------------!
 
+  daysiny=0
+  do mnth=1,12
+    daysiny=daysiny+int(no_days(year,mnth,thty_dys))
+  enddo
+  
 ! See Page 94 of van Bussel's thesis, section 2.2.1, eqns 5.1-5.3
 ! or page 249 of Waha et al 2012
   museas=sum(ssp%emnthtmp)/12.0d0+273.15
@@ -145,6 +155,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
   if (iseas.eq.1) then ! sowing depends on precipitation
          
 ! In this case we use running four-month sums of precip/PET ratios 
+! mth variable holds the first month of the wet season
     call getwet(hrs,q,mnth,pet)
       
 ! Find the first day of the first wet-season month which is wet enough
@@ -156,11 +167,12 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
   elseif (iseas.eq.2) then ! sowing depends on temperature
     pet(:)=1.0d0
     do ft=3,nft ! there will be crop-specific threshold temperatures
+! Figures whether the crop will have a spring sow date
       if (pft_tab(ft)%sowthresh(2).gt.pft_tab(ft)%lethal(1)) then
         sowday(ft)=summerday(pft_tab(ft)%sowthresh(2),mmid)
       endif ! sowday,avtmp.ge.sumtsow
-! Some crops have vernalization requirements; skip those that do not
-! usually, crops have either summer or winter thresholds but not both
+! Some crops have vernalization requirements; skip those that do not,
+! usually crops have either summer or winter thresholds but not both
 ! (see van Bussel Table 5.1 on page 97, or Waha et al Table 1 page 250)
       if (pft_tab(ft)%sowthresh(1).ge.pft_tab(ft)%lethal(2)) cycle 
       if (pft_tab(ft)%sowthresh(1).gt.maxval(ssp%emnthtmp)) then  
@@ -170,7 +182,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       endif 
     enddo ! ft=1,nft
   endif ! seasonality
-      
+  
 ! Estimate vernalisation days
   do ft=3,nft
 ! Aseasonal climate; just sow on new years day as per van Bussel 2011 p 95 
@@ -181,12 +193,14 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       if (sowday(ft).ge.mdoy(mnth)) msow=mnth
       if (ssp%emnthtmp(mnth).lt.ssp%emnthtmp(mcoldest)) mcoldest=mnth
     enddo ! mnth=1,12
+! Get the midday of the coldest month
     icoldest=mmid(mcoldest);
     if (iseas.lt.2) icoldest=0
     fv=1.0-pft_tab(ft)%croptype(2); vdays=0.0; dead=.FALSE.
     j=mdoy(msow)-1; vegphu(:)=0.0; repphu(:)=0.0
     nwarm=0; mcold=0; ntot=0; totveg=0.0; nvern=0
-   
+
+! For all the months in the year starting from sowing day   
     do k=0,11 !6+5*croptype(2,ft)
       if (dead) cycle
       mnth=msow+k
@@ -195,9 +209,11 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
         ssp%emnthtmp(mnth).ge.pft_tab(ft)%lethal(2))
       if (dead) cycle
       if (mcold.gt.0) cycle
+! Gets for the mid-month,temperature and photoperiod response function values
       call wangengel(pft_tab(ft)%cardinal(1),pft_tab(ft)%cardinal(2), &
         pft_tab(ft)%cardinal(3),ssp%emnthtmp(mnth),pft_tab(ft)%croptype(1), &
         pft_tab(ft)%photoperiod(1),pft_tab(ft)%photoperiod(2),hrs(mnth),wft,wfp)
+! For crops that require vernalization
       if (fv.lt.0.95d0) then
         do i=1,no_days(year,mnth,thty_dys)
           j=j+1
@@ -225,7 +241,54 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       if (mcold.eq.0) ntot=ntot+1
     enddo ! k=0,11
 
-
+    cropgdd(1,ft)=pft_tab(ft)%croprange(1)
+    if (iseas.eq.2) then ! Temperature controlled
+! Here, I apply a squared cosine function to get the GDD rather than a
+! quadratic as Bondeau et al (2007) did.  The cosine provides a smoothly
+! varying function which can easily be shifted depending on when the coldest
+! month occurs, avoiding any need for hardcoding time windows.
+      if (totveg.gt.cropgdd(1,ft).and. &
+        pft_tab(ft)%croprange(1).lt.pft_tab(ft)%croprange(2)) then
+        nydays=daysiny
+        cropgdd(1,ft)=pft_tab(ft)%croprange(2)
+        cropgdd(2,ft)=pft_tab(ft)%croprange(4)
+        vrat=sowday(ft)-icoldest
+        cropgdd(1,ft)=pft_tab(ft)%croprange(1)+ &
+          (pft_tab(ft)%croprange(2)-pft_tab(ft)%croprange(1))* &!*fv
+            (cos(vrat*3.14159d0/nydays)**2)
+      endif ! (croprange(1,ft).lt.croprange(2,ft))
+    else
+! Estimate using cumulative sum for vegetative growth (vegphu), max allowed
+! months for reproductive growth (3), and phenological index where senescence
+! begins (cropgdd(5,ft))
+      if (pft_tab(ft)%croptype(2).eq.0 &
+       .and.maxval(vegphu).gt.pft_tab(ft)%croprange(1)) ntot=min(3,ntot)
+      totrep=0;
+      i=0; totphu(:)=0.0d0; slen(:)=0
+      do k=nvern+1,ntot-1
+        if (cropgdd(1,ft).gt.pft_tab(ft)%croprange(1)) cycle
+        mnth=msow+k
+        if (mnth.gt.12) mnth=mnth-12
+        targ=vegphu(mnth)/pft_tab(ft)%cropphen(5)
+        totphu(mnth)=vegphu(mnth)
+        do j=k+1,ntot 
+          if (totphu(mnth).ge.targ) cycle
+          m=j
+          if (m.gt.12) m=m-12
+          totphu(mnth)=max(targ,totphu(mnth)+repphu(m))
+          slen(mnth)=j-nvern
+        enddo ! do j=k+1,ntot
+        if (totphu(mnth).le.pft_tab(ft)%croprange(2).and. &
+          totphu(mnth).gt.pft_tab(ft)%croprange(1)) then
+          cropgdd(1,ft)=totphu(mnth)
+          totrep=totrep+totphu(mnth) !*4.0d0/(1+slen(mnth))
+          if (slen(mnth).gt.0) i=i+1 !slen(mnth)+1
+        elseif (totphu(mnth).gt.pft_tab(ft)%croprange(2)) then
+          cropgdd(1,ft)=pft_tab(ft)%croprange(2)
+        endif
+      enddo ! k=0,11
+      if (i.gt.0) cropgdd(1,ft)=totrep/i !*i/4.0d0
+    endif ! iseas.eq.2, controlled by temperature or otherwise
   enddo ! ft=3,nft
 end subroutine seasonality
 
@@ -421,7 +484,7 @@ integer  :: lasttmp,lastm,lastday,m,thistmp
 ! subroutine wangengel                                                 !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Get temperature and photoperiod function values for crops
+!> @brief Get temperature and photoperiod response function values for crops
 !! @details These functions are from Wang and Engel 1998 (Agri Sys 58:1-24).
 !! The sum of the product of the temperature and photoperiod functions gives 
 !! the effective physiological days.
@@ -443,11 +506,12 @@ real(dp) :: t1,t2 ! internal
 real(dp) :: dtype ! 1 for long-day, -1 for short-day, 0 for day-neutral plants
 
 ft=0.0
-! Photoperiod effect
+! Photoperiod effect.Eq. 11,12,13 from Wang & Engel
 fp=max(0.0,1-exp(-dtype*4.0*(p-pcrit)/abs(popt-pcrit)))
 if (tmax.gt.tmin) then
 ! NB ft will be zero for tmp outside the range tmin to tmax inclusive
   if (tmp.le.tmax.and.tmp.ge.tmin) then
+! alpha value from Eq.6 of Wang & Engel
     alpha=log(2.0)/log((tmax-tmin)/(topt-tmin))
     t1=(topt-tmin)**alpha
     t2=(tmp-tmin)**alpha
