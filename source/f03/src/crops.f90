@@ -64,7 +64,7 @@ contains
 !! q(12)                 Monthly photon flux density
 !! pet(12)               Monthly ratio precip/(potential evapotranspiration)
 !! mnthhum(12)       IN  (mean monthly humidity)
-!! sowday(*)         OUT Sow day
+!! sowday(*)         OUT Sow day per pft
 !! msow                  Sowing month
 !! daysiny               Days in a year
 !! mcoldest              Coldest month
@@ -74,7 +74,6 @@ contains
 !! ndays(12)    input Number of days per month
 !! tmp(12,31)   input Mean daily temperatures (C)
 !! prc(12,31)   input Mean daily precipitation (mm)
-!! sowday(*)   output Sowing day for each PFT
 !! pscale(*)    input Flags to reduce optimal photoperiods for each PFT
 !! popt(*)     output Optimal photoperiods for each PFT
 !! vernmsat(*)  input Max vernalisation requirement per PFT (days/month)
@@ -105,6 +104,7 @@ logical  :: dead
 real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
 !----------------------------------------------------------------------!
 
+! Days in a year
   daysiny=0
   do mnth=1,12
     daysiny=daysiny+int(no_days(year,mnth,thty_dys))
@@ -112,6 +112,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
   
 ! See Page 94 of van Bussel's thesis, section 2.2.1, eqns 5.1-5.3
 ! or page 249 of Waha et al 2012
+! Calculates variation coefficient for temperature and precipitation
   museas=sum(ssp%emnthtmp)/12.0d0+273.15
   seastmp=sqrt(1.0d0/11.0d0* &
     sum((ssp%emnthtmp(:)+273.15-museas)*(ssp%emnthtmp(:)+273.15-museas)))/museas
@@ -152,14 +153,14 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
   sowday(1:nft)=0 ! recalculate sowday each year 
   
 ! Follow van Bussel (section 2.2.2) or Waha et al p 249 to find sowing day
-  if (iseas.eq.1) then ! sowing depends on precipitation
+  if (iseas.eq.1) then ! If sowing depends on precipitation
          
-! In this case we use running four-month sums of precip/PET ratios 
-! mth variable holds the first month of the wet season
+! Run four-month sums of precip/PET ratios 
+! mnth is an output variable holding the first month of the wet season
     call getwet(hrs,q,mnth,pet)
       
 ! Find the first day of the first wet-season month which is wet enough
-! NB all crops will be sown on the same day in this case
+! All crops will be sown on the same day in this case
     do day=1,no_days(year,mnth,thty_dys)
       if (sowday(3).eq.0.and.prc(mnth,day).gt.0.1d0) &
         sowday(3:nft)=day-1+mdoy(mnth)
@@ -179,7 +180,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
         sowday(ft)=winterday(maxval(ssp%emnthtmp)-0.1,mmid)
       else
         sowday(ft)=winterday(pft_tab(ft)%sowthresh(1),mmid)
-      endif 
+      endif
     enddo ! ft=1,nft
   endif ! seasonality
   
@@ -200,7 +201,8 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
     j=mdoy(msow)-1; vegphu(:)=0.0; repphu(:)=0.0
     nwarm=0; mcold=0; ntot=0; totveg=0.0; nvern=0
 
-! For all the months in the year starting from sowing day   
+! Cycle through all 12 months starting with the sowing month
+! k is the number of months added to the sowing month in each iteration
     do k=0,11 !6+5*croptype(2,ft)
       if (dead) cycle
       mnth=msow+k
@@ -209,11 +211,14 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
         ssp%emnthtmp(mnth).ge.pft_tab(ft)%lethal(2))
       if (dead) cycle
       if (mcold.gt.0) cycle
-! Gets for the mid-month,temperature and photoperiod response function values
+! Calculate the mean daily heat units for this month (tmp*wft*wfp)
+! wft is the fraction of the heat units allowed per day this month
+! wfp is the fraction of the maximum photoperiod
       call wangengel(pft_tab(ft)%cardinal(1),pft_tab(ft)%cardinal(2), &
         pft_tab(ft)%cardinal(3),ssp%emnthtmp(mnth),pft_tab(ft)%croptype(1), &
         pft_tab(ft)%photoperiod(1),pft_tab(ft)%photoperiod(2),hrs(mnth),wft,wfp)
-! For crops that require vernalization
+! For crops that require vernalization.If the crop requires vernalization but
+! it has been met,meaning fv.gt.0.95,skip.
       if (fv.lt.0.95d0) then
         do i=1,no_days(year,mnth,thty_dys)
           j=j+1
@@ -233,7 +238,14 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
           pft_tab(ft)%photoperiod(5),pft_tab(ft)%photoperiod(6),hrs(mnth),wft,wfp)
         repphu(mnth)=repphu(mnth)+ssp%emnthtmp(mnth)*no_days(year,mnth,thty_dys)*wft*wfp
       endif
+! The cumulative vegetative heat units achieved this month
       vegphu(mnth)=totveg
+! If vernalisation complete, then we need to count the number of months where we
+! accumulate reproductive PHU.  These months need to be contiguous.
+! It will keed adding to nwarm for as long as repphu is positive.
+! When pepphu becomes zero or negative,it will mean that the growing season ended
+! and mcold will attain a value diff than zero which will stop PHU from accumulating
+! based on a conditional above.
       if (fv.gt.0.95d0) then
         if (nwarm.gt.0.and.repphu(mnth).le.0.0d0) mcold=mnth
         if (mcold.eq.0.and.repphu(mnth).gt.0.0d0) nwarm=nwarm+1
@@ -261,20 +273,33 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
 ! Estimate using cumulative sum for vegetative growth (vegphu), max allowed
 ! months for reproductive growth (3), and phenological index where senescence
 ! begins (cropgdd(5,ft))
+! croptype(2,ft) is zero if no vernalisation required
+! croprange(1,ft) is min PHU for maturity; ntot is total months accumulating PHU
+! Restrict ntot to 3 if the crop does not require vernalisation
       if (pft_tab(ft)%croptype(2).eq.0 &
        .and.maxval(vegphu).gt.pft_tab(ft)%croprange(1)) ntot=min(3,ntot)
       totrep=0;
       i=0; totphu(:)=0.0d0; slen(:)=0
+! Start with the month after vernalisation is complete
+! nvern are the months required for vernalization
       do k=nvern+1,ntot-1
+! cropgdd(1,ft) is initialised to be croprange(1,ft) but may change
+! croprange(1,ft) is the min GDD required
         if (cropgdd(1,ft).gt.pft_tab(ft)%croprange(1)) cycle
+! Get the current calendar month, after vernalising
         mnth=msow+k
         if (mnth.gt.12) mnth=mnth-12
+! targ is the target PHU for maturity, when we can harvest the plant
+! targ is always greater than vegphu because we add repphu to it
         targ=vegphu(mnth)/pft_tab(ft)%cropphen(5)
         totphu(mnth)=vegphu(mnth)
-        do j=k+1,ntot 
+! loop over reproductive (fruiting) months
+        do j=k+1,ntot
+! We accumulate reproductive PHU only until we achieve the PHU for harvest 
           if (totphu(mnth).ge.targ) cycle
-          m=j
+          m=j+msow
           if (m.gt.12) m=m-12
+! Add monthly reproductive PHU to total cumulative PHU
           totphu(mnth)=max(targ,totphu(mnth)+repphu(m))
           slen(mnth)=j-nvern
         enddo ! do j=k+1,ntot
@@ -286,7 +311,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
         elseif (totphu(mnth).gt.pft_tab(ft)%croprange(2)) then
           cropgdd(1,ft)=pft_tab(ft)%croprange(2)
         endif
-      enddo ! k=0,11
+      enddo 
       if (i.gt.0) cropgdd(1,ft)=totrep/i !*i/4.0d0
     endif ! iseas.eq.2, controlled by temperature or otherwise
   enddo ! ft=3,nft
@@ -306,7 +331,8 @@ end subroutine seasonality
 !! van Bussel (2011) discusses determination of start of growing period
 !! in her chapter 5, section 2.2.2, and the sowing day should be the first
 !! day where precip>0.1mm of that wet month.
-!! 
+!! Calculate 4-month sums of prec/evt and find the highest.
+!! Output the starting month of the highest.
 !! We depart from van Bussel in that we do not use Priestley-Taylor PET, 
 !! but instead lift Penman-Montheith code from of dolyday.
 !!
@@ -414,6 +440,7 @@ integer  :: lasttmp,lastm,lastday,m,thistmp
 
 
   summerday=1
+! If all monthly temperatures below or above threshold,return
   if (minval(ssp%emnthtmp(:)).ge.thresh) return
   if (maxval(ssp%emnthtmp(:)).lt.thresh) return
   lasttmp=0; lastm=12; lastday=-mmid(1)
