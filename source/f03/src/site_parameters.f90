@@ -48,6 +48,7 @@ type SiteParameters
   real(dp), dimension(12)  :: emnthtmp
   real(dp), dimension(12)  :: emnthprc
   real(dp), dimension(12)  :: emnthhum
+  integer                  :: iseas
   integer, dimension(max_cohorts,max_cohorts) :: co2ftmap
   real(dp), dimension(max_pftps)              :: ftcov
 end type

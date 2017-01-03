@@ -49,6 +49,8 @@ type PftParameters
   real(dp),dimension(6)  :: harvest
   real(dp),dimension(2)  :: irrig
   real(dp),dimension(5)  :: fertuse
+  integer                :: sowday
+  integer,dimension(2)   :: cropgdd
 end type
 
 type (PftParameters) :: pft(max_cohorts), pft_tab(max_pftps)

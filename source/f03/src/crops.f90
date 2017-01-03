@@ -91,9 +91,6 @@ implicit none
 real(dp) :: tmp(12,31),prc(12,31),cld(12)
 integer  :: thty_dys,nft,year
 
-integer  :: sowday(nft) !Have to change to output
-real(dp) :: cropgdd(2,nft) !Have to change to output
-
 real(dp) :: museas,seastmp,seasprc,hrs(12)
 integer  :: iseas,mdoy(12),mmid(12),mnth,day,ft,k,daysiny
 integer  :: msow,mcoldest,icoldest,nwarm,mcold,ntot,nvern,i,j,m
@@ -121,7 +118,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
   sum((ssp%emnthprc(:)-museas)*(ssp%emnthprc(:)-museas)))/museas
 
 ! Flag the seasonality type to use
-  iseas=0
+  ssp%iseas=0
 ! Thresholds for seasonality come from van Bussel's thesis page 95
 ! or from Waha et al 2012 page 249
 
@@ -129,14 +126,14 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
 ! Only use one seasonality type, depending on whether 
 ! minimum mean monthly temperature exceeds 10C
     if (minval(ssp%emnthtmp).gt.10.0d0) then
-      iseas=1 ! assume seasons controlled primarily by precipitation
+      ssp%iseas=1 ! assume seasons controlled primarily by precipitation
     else
-      iseas=2 ! assume seasons controlled primarily by temperature
+      ssp%iseas=2 ! assume seasons controlled primarily by temperature
     endif ! min(ssp%emnthtmp)>10C
   elseif (seastmp.gt.0.01d0) then
-    iseas=2 ! seasons controlled by temperature
+    ssp%iseas=2 ! seasons controlled by temperature
   elseif (seasprc.gt.0.4d0) then
-    iseas=1 ! seasons controlled by precipitation
+    ssp%iseas=1 ! seasons controlled by precipitation
   endif ! check for combined temp and precip seasonality
 
 ! For each month, get day-of-year for the first day and mid-month day length
@@ -150,10 +147,10 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
     call pfd(ssp%lat,mmid(mnth),hrs(mnth),cld(mnth),qdir,qdiff,q(mnth))
   enddo
   
-  sowday(1:nft)=0 ! recalculate sowday each year 
+  pft_tab(1:nft)%sowday=0 ! recalculate sowday each year 
   
 ! Follow van Bussel (section 2.2.2) or Waha et al p 249 to find sowing day
-  if (iseas.eq.1) then ! If sowing depends on precipitation
+  if (ssp%iseas.eq.1) then ! If sowing depends on precipitation
          
 ! Run four-month sums of precip/PET ratios 
 ! mnth is an output variable holding the first month of the wet season
@@ -162,24 +159,24 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
 ! Find the first day of the first wet-season month which is wet enough
 ! All crops will be sown on the same day in this case
     do day=1,no_days(year,mnth,thty_dys)
-      if (sowday(3).eq.0.and.prc(mnth,day).gt.0.1d0) &
-        sowday(3:nft)=day-1+mdoy(mnth)
+      if (pft_tab(3)%sowday.eq.0.and.prc(mnth,day).gt.0.1d0) &
+        pft_tab(3:nft)%sowday=day-1+mdoy(mnth)
     enddo ! day=1,no_days(year,mnth,thty_dys)
-  elseif (iseas.eq.2) then ! sowing depends on temperature
+  elseif (ssp%iseas.eq.2) then ! sowing depends on temperature
     pet(:)=1.0d0
     do ft=3,nft ! there will be crop-specific threshold temperatures
 ! Figures whether the crop will have a spring sow date
       if (pft_tab(ft)%sowthresh(2).gt.pft_tab(ft)%lethal(1)) then
-        sowday(ft)=summerday(pft_tab(ft)%sowthresh(2),mmid)
+        pft_tab(ft)%sowday=summerday(pft_tab(ft)%sowthresh(2),mmid)
       endif ! sowday,avtmp.ge.sumtsow
 ! Some crops have vernalization requirements; skip those that do not,
 ! usually crops have either summer or winter thresholds but not both
 ! (see van Bussel Table 5.1 on page 97, or Waha et al Table 1 page 250)
       if (pft_tab(ft)%sowthresh(1).ge.pft_tab(ft)%lethal(2)) cycle 
       if (pft_tab(ft)%sowthresh(1).gt.maxval(ssp%emnthtmp)) then  
-        sowday(ft)=winterday(maxval(ssp%emnthtmp)-0.1,mmid)
+        pft_tab(ft)%sowday=winterday(maxval(ssp%emnthtmp)-0.1,mmid)
       else
-        sowday(ft)=winterday(pft_tab(ft)%sowthresh(1),mmid)
+        pft_tab(ft)%sowday=winterday(pft_tab(ft)%sowthresh(1),mmid)
       endif
     enddo ! ft=1,nft
   endif ! seasonality
@@ -187,16 +184,16 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
 ! Estimate vernalisation days
   do ft=3,nft
 ! Aseasonal climate; just sow on new years day as per van Bussel 2011 p 95 
-    if (sowday(ft).eq.0) sowday(ft)=1
+    if (pft_tab(ft)%sowday.eq.0) pft_tab(ft)%sowday=1
     msow=1; mcoldest=1
 ! Get the sowing month and the coldest month
     do mnth=1,12
-      if (sowday(ft).ge.mdoy(mnth)) msow=mnth
+      if (pft_tab(ft)%sowday.ge.mdoy(mnth)) msow=mnth
       if (ssp%emnthtmp(mnth).lt.ssp%emnthtmp(mcoldest)) mcoldest=mnth
     enddo ! mnth=1,12
 ! Get the midday of the coldest month
     icoldest=mmid(mcoldest);
-    if (iseas.lt.2) icoldest=0
+    if (ssp%iseas.lt.2) icoldest=0
     fv=1.0-pft_tab(ft)%croptype(2); vdays=0.0; dead=.FALSE.
     j=mdoy(msow)-1; vegphu(:)=0.0; repphu(:)=0.0
     nwarm=0; mcold=0; ntot=0; totveg=0.0; nvern=0
@@ -222,7 +219,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       if (fv.lt.0.95d0) then
         do i=1,no_days(year,mnth,thty_dys)
           j=j+1
-          if (j.lt.sowday(ft)) cycle
+          if (j.lt.pft_tab(ft)%sowday) cycle
           if (fv.lt.0.95d0) call streck(pft_tab(ft)%cardinal(4), &
             pft_tab(ft)%cardinal(5),pft_tab(ft)%cardinal(6), &
             ssp%emnthtmp(mnth),pft_tab(ft)%croptype(1),pft_tab(ft)%photoperiod(3), &
@@ -252,20 +249,20 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       endif ! fv.gt.0.995d0
       if (mcold.eq.0) ntot=ntot+1
     enddo ! k=0,11
-
-    cropgdd(1,ft)=pft_tab(ft)%croprange(1)
-    if (iseas.eq.2) then ! Temperature controlled
+    
+    pft_tab(ft)%cropgdd(1)=pft_tab(ft)%croprange(1)
+    if (ssp%iseas.eq.2) then ! Temperature controlled
 ! Here, I apply a squared cosine function to get the GDD rather than a
 ! quadratic as Bondeau et al (2007) did.  The cosine provides a smoothly
 ! varying function which can easily be shifted depending on when the coldest
 ! month occurs, avoiding any need for hardcoding time windows.
-      if (totveg.gt.cropgdd(1,ft).and. &
+      if (totveg.gt.pft_tab(ft)%cropgdd(1).and. &
         pft_tab(ft)%croprange(1).lt.pft_tab(ft)%croprange(2)) then
         nydays=daysiny
-        cropgdd(1,ft)=pft_tab(ft)%croprange(2)
-        cropgdd(2,ft)=pft_tab(ft)%croprange(4)
-        vrat=sowday(ft)-icoldest
-        cropgdd(1,ft)=pft_tab(ft)%croprange(1)+ &
+        pft_tab(ft)%cropgdd(1)=pft_tab(ft)%croprange(2)
+        pft_tab(ft)%cropgdd(2)=pft_tab(ft)%croprange(4)
+        vrat=pft_tab(ft)%sowday-icoldest
+        pft_tab(ft)%cropgdd(1)=pft_tab(ft)%croprange(1)+ &
           (pft_tab(ft)%croprange(2)-pft_tab(ft)%croprange(1))* &!*fv
             (cos(vrat*3.14159d0/nydays)**2)
       endif ! (croprange(1,ft).lt.croprange(2,ft))
@@ -285,7 +282,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       do k=nvern+1,ntot-1
 ! cropgdd(1,ft) is initialised to be croprange(1,ft) but may change
 ! croprange(1,ft) is the min GDD required
-        if (cropgdd(1,ft).gt.pft_tab(ft)%croprange(1)) cycle
+        if (pft_tab(ft)%cropgdd(1).gt.pft_tab(ft)%croprange(1)) cycle
 ! Get the current calendar month, after vernalising
         mnth=msow+k
         if (mnth.gt.12) mnth=mnth-12
@@ -305,16 +302,17 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
         enddo ! do j=k+1,ntot
         if (totphu(mnth).le.pft_tab(ft)%croprange(2).and. &
           totphu(mnth).gt.pft_tab(ft)%croprange(1)) then
-          cropgdd(1,ft)=totphu(mnth)
+          pft_tab(ft)%cropgdd(1)=totphu(mnth)
           totrep=totrep+totphu(mnth) !*4.0d0/(1+slen(mnth))
           if (slen(mnth).gt.0) i=i+1 !slen(mnth)+1
         elseif (totphu(mnth).gt.pft_tab(ft)%croprange(2)) then
-          cropgdd(1,ft)=pft_tab(ft)%croprange(2)
+          pft_tab(ft)%cropgdd(1)=pft_tab(ft)%croprange(2)
         endif
       enddo 
-      if (i.gt.0) cropgdd(1,ft)=totrep/i !*i/4.0d0
+      if (i.gt.0) pft_tab(ft)%cropgdd(1)=totrep/i !*i/4.0d0
     endif ! iseas.eq.2, controlled by temperature or otherwise
   enddo ! ft=3,nft
+
 end subroutine seasonality
 
 
@@ -623,6 +621,80 @@ endif ! vtmax.gt.vtmin
  
 return
 end subroutine streck
+
+!**********************************************************************!
+!                                                                      !
+!                       crop_outputs :: crops                          !
+!                     ---------------------                            !
+!                                                                      !
+! subroutine crop_outputs                                              !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Output files for crops
+!! @details  
+!!
+!! @author EPK 
+!! @date Dec 2016
+!----------------------------------------------------------------------!
+subroutine crop_outputs(stoutput,nft,sl)
+!**********************************************************************!
+implicit none
+
+character :: stoutput*1000
+integer :: nft,ft,sl,coun
+
+coun=0
+
+do ft=3,nft
+  if(pft_tab(ft)%cropft.EQ.0) cycle
+  select case (sl)
+  case (0)
+    coun=coun+1
+    open(500+coun,file=stoutput(1:blank(stoutput))//'/'// &
+      trim(pft_tab(ft)%tag)//'sow.dat')
+    coun=coun+1
+    open(500+coun,file=stoutput(1:blank(stoutput))//'/'// &
+      trim(pft_tab(ft)%tag)//'gdd.dat')
+    coun=coun+1
+    open(500+coun,file=stoutput(1:blank(stoutput))//'/'// &
+      'site'//'seas.dat')
+  case (1)
+    coun=coun+1
+    close(500+coun)
+    coun=coun+1
+    close(500+coun)
+    coun=coun+1
+    close(500+coun)
+  case (2)
+    coun=coun+1
+    WRITE(500+coun,'(f7.3,f9.3)',advance='NO') ssp%lat,ssp%lon
+    coun=coun+1
+    WRITE(500+coun,'(f7.3,f9.3)',advance='NO') ssp%lat,ssp%lon
+    coun=coun+1
+    WRITE(500+coun,'(f7.3,f9.3)',advance='NO') ssp%lat,ssp%lon
+  case (3)
+    coun=coun+1
+    WRITE(500+coun,'(i4)',advance='NO') pft_tab(ft)%sowday
+    coun=coun+1
+    WRITE(500+coun,'(i5)',advance='NO') pft_tab(ft)%cropgdd(1)
+    coun=coun+1
+    WRITE(500+coun,'(i2)',advance='NO') ssp%iseas
+  case (4)
+    coun=coun+1
+    WRITE(500+coun,*)
+    coun=coun+1
+    WRITE(500+coun,*)
+    coun=coun+1
+    WRITE(500+coun,*)
+  end select
+
+enddo
+
+
+
+
+return
+end subroutine crop_outputs
 
 
 

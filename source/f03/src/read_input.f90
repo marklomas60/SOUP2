@@ -551,6 +551,9 @@ pft_tab(ft)%fertuse(2)=0.0
 pft_tab(ft)%fertuse(3)=0.0
 pft_tab(ft)%fertuse(4)=0.0
 pft_tab(ft)%fertuse(5)=0.0
+pft_tab(ft)%sowday=0
+pft_tab(ft)%cropgdd(1)=0
+pft_tab(ft)%cropgdd(2)=0
 
 ft = 2
 pft_tab(ft)%c3c4 = 0
@@ -623,6 +626,9 @@ pft_tab(ft)%fertuse(2)=0.0
 pft_tab(ft)%fertuse(3)=0.0
 pft_tab(ft)%fertuse(4)=0.0
 pft_tab(ft)%fertuse(5)=0.0
+pft_tab(ft)%sowday=0
+pft_tab(ft)%cropgdd(1)=0
+pft_tab(ft)%cropgdd(2)=0
 
 !----------------------------------------------------------------------!
 ! Read in functional type parameterisation.                            !
@@ -670,9 +676,9 @@ if (n_fields(st1)==1) then
         stop
       endif
 
-    if (n_fields(st1)/=72) then
+    if (n_fields(st1)/=75) then
       write(*,'('' PROGRAM TERMINATED'')')
-      write(*,*) 'The ft parameterisation must contain 72 fields.'
+      write(*,*) 'The ft parameterisation must contain 75 fields.'
       write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
       stop
     endif
@@ -700,7 +706,9 @@ if (n_fields(st1)==1) then
  pft_tab(ft)%harvest(3),pft_tab(ft)%harvest(4),pft_tab(ft)%harvest(5),&
  pft_tab(ft)%harvest(6),pft_tab(ft)%irrig(1),pft_tab(ft)%irrig(2),&
  pft_tab(ft)%fertuse(1),pft_tab(ft)%fertuse(2),pft_tab(ft)%fertuse(3),&
- pft_tab(ft)%fertuse(4),pft_tab(ft)%fertuse(5)
+ pft_tab(ft)%fertuse(4),pft_tab(ft)%fertuse(5),pft_tab(ft)%sowday,&
+ pft_tab(ft)%cropgdd(1),pft_tab(ft)%cropgdd(2)
+
 
 
     if (pft_tab(ft)%mort>max_years) then
@@ -760,9 +768,9 @@ else
         stop
       endif
 
-      if (n_fields(st1)/=72) then
+      if (n_fields(st1)/=75) then
         write(*,'('' PROGRAM TERMINATED'')')
-        write(*,*) 'The ft parameterisation must contain 72 fields.'
+        write(*,*) 'The ft parameterisation must contain 75 fields.'
         write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
         stop
       endif
@@ -789,7 +797,9 @@ else
  pft_tab(ft)%harvest(3),pft_tab(ft)%harvest(4),pft_tab(ft)%harvest(5),&
  pft_tab(ft)%harvest(6),pft_tab(ft)%irrig(1),pft_tab(ft)%irrig(2),&
  pft_tab(ft)%fertuse(1),pft_tab(ft)%fertuse(2),pft_tab(ft)%fertuse(3),&
- pft_tab(ft)%fertuse(4),pft_tab(ft)%fertuse(5)
+ pft_tab(ft)%fertuse(4),pft_tab(ft)%fertuse(5),pft_tab(ft)%sowday,&
+ pft_tab(ft)%cropgdd(1),pft_tab(ft)%cropgdd(2)
+
 
 
       if (pft_tab(ft)%sla<0.0) then

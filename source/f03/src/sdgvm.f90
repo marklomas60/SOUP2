@@ -107,6 +107,11 @@ call read_input_file(buff1,stinput,stinit,stoutput,sttxdp,stmask,stlu,&
 call open_default(stoutput)
 
 !----------------------------------------------------------------------!
+! Open crop output files.                                              !
+!----------------------------------------------------------------------!
+call crop_outputs(stoutput,nft,0)
+
+!----------------------------------------------------------------------!
 ! Open optional output files.                                          !
 !----------------------------------------------------------------------!
 if (outyears2>0) call OPEN_OPTIONAL(stoutput,nft,out_cov,out_bio,&
@@ -141,6 +146,11 @@ do site=1,sites
   seed1 = xseed1
   seed2 = 2*seed1
   seed3 = 3*seed1
+
+!----------------------------------------------------------------------!
+! Write lat/lon in crop output file                                    !
+!----------------------------------------------------------------------!
+call crop_outputs(stoutput,nft,2)
 
 !----------------------------------------------------------------------!
 ! Read in climate.                                                     !
@@ -230,6 +240,8 @@ do site=1,sites
       call SET_CLIMATE(xtmpv,xprcv,xhumv,xcldv,withcloudcover,yearv,iyear, &
  tmp,prc,hum,cld,thty_dys,yr0,year)
       
+      call SEASONALITY(tmp,prc,cld,thty_dys,nft,year)
+
 !----------------------------------------------------------------------!
 ! Set land use through ftprop.                                         !
 !----------------------------------------------------------------------!
@@ -242,8 +254,7 @@ do site=1,sites
       call MKDLIT()
 
       call RESTRICT_COHORT_NUMBERS()
-      
-      call SEASONALITY(tmp,prc,cld,thty_dys,nft,year) 
+       
 !----------------------------------------------------------------------!
 ! Initialisations that were in doly at the beginning of the year       !
 !----------------------------------------------------------------------!
@@ -555,6 +566,12 @@ do site=1,sites
     write(46,'('' '',f8.5)',advance='NO') fprob
     write(47,'('' '',f8.2)',advance='NO') outputs(daily_out,9,'Average') !temperature
     write(48,'('' '',f8.2)',advance='NO') outputs(daily_out,11,'Average') !humidity
+
+!----------------------------------------------------------------------!
+! Write var in crop output file                                        !
+!----------------------------------------------------------------------!
+    call crop_outputs(stoutput,nft,3)
+
   endif
 
 !----------------------------------------------------------------------!
@@ -809,6 +826,11 @@ else
 !----------------------------------------------------------------------!
 endif
 
+!----------------------------------------------------------------------!
+! Skip line in crop output files.                                      !
+!----------------------------------------------------------------------!
+call crop_outputs(stoutput,nft,4)
+
 !***********************************************************************
 enddo ! site loop
 !***********************************************************************
@@ -914,6 +936,12 @@ if (snp_no>0) then
     close(fno+4)
   enddo
 endif
+
+!----------------------------------------------------------------------!
+! Close crop output files.                                             !
+!----------------------------------------------------------------------!
+call crop_outputs(stoutput,nft,1)
+
 
 end program sdgvm
 

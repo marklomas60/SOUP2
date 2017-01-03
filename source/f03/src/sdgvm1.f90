@@ -1272,8 +1272,7 @@ end subroutine swap
 ! subroutine mix_water(ftcov,nft)                                      !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Read internal parameters from "param.dat" file, and io
-!! parameters from "misc_params.dat".
+!> @brief 
 !! @details
 !! @author Mark Lomas
 !! @date Feb 2006
