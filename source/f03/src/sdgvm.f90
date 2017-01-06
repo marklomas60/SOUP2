@@ -343,7 +343,7 @@ call crop_outputs(stoutput,nft,2)
             call EVAPOTRANSPIRATION(tmp(mnth,day),hum(mnth,day),rn,canga,gsn,hrs,eemm,etmm)
             pet = eemm
             pet2 = pet
-
+            
             call HYDROLOGY(adp,sfc,sw,sswc,awl,kd,kx,eemm,etmm,pet2,prc(mnth,day), &
      s1in,tmp(mnth,day),ssv(ft)%lai%tot,evap,tran,roff,interc,evbs,f2,f3,ft)
             flow1(ft) = flow1(ft) + f2/10.0

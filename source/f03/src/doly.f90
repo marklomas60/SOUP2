@@ -124,6 +124,7 @@ data ndsum/16,46,75,106,136,167,197,228,259,289,320,350/
 
 p = 101325.0
 
+! Real lai,the remainder and the whole plus one 
 rlai = ssv(ssp%cohort)%lai%tot
 rem = rlai - int(rlai)
 lai = int(rlai) + 1
@@ -134,6 +135,8 @@ lai = int(rlai) + 1
 ! Night-time respiration ? CHECK
 rd = 0.82e-6
 ! maxc, moisture response parameter
+! maxc is is the maximum influence of soil water on stomatal conductance.
+! Goes into nppcalc
 maxc = 690.0/622.6
 ! Leaf molecular weight.
 if (sla>0.0) then
@@ -180,8 +183,13 @@ rh = hum
 if (rh>95.0)  rh=95.0
 if (rh<30.0)  rh=30.0
 
+! These sapwood respiration  calculations don't make sense being here
+! and can be commented out since the variables are 
+! overwritten below
 ! Sapwood respiration N.B. 8.3144 J/K/mol= Universal gas constant.
 ! sapresp = exp(21.6 - 5.367e4/(8.3144*tk))
+! Similar but not the same to Eq.42
+! km=0.4 in units s^-1
 sapresp = 0.4*exp(0.06*t)*0.1
 sapresp = 0.4*exp(0.02*t)*0.35
 
@@ -207,6 +215,9 @@ lam = 2500.0 - (2.367*t)
 s = 48.7*exp(0.0532*t)
 rn = 0.96*(q*1000000.0/4.0 + 208.0 + 6.0*t)
 rn = rn*0.52
+! These pet calculations don't make sense being here
+! and can be commented out since the variables are 
+! overwritten below
 pet = (1.26*s*rn)/(s + 66.0)*tgp%p_pet
 petmm = (pet*3600.0)/(lam*1000.0)*10.0
 if (petmm>0.0) then
@@ -223,6 +234,10 @@ pet = petv
 ! d=zero plane displacement
 ! z0=roughness length
 !----------------------------------------------------------------------!
+! Boundary conductance (canga) derived from Eq.24 and Eq.25.
+! Height (ht) is constant instead of being a function of lai as in Eq.25
+! Also its a function of windspeed while in Eq.24 it's not although
+! Eq.24 might be missing wind speed,check wording.
 windspeed= 5.0 ! in m/s
 canga = 0.168*windspeed/log((200.0 - 0.7*ht)/(0.1*ht))**2
 
@@ -279,6 +294,7 @@ endif
 
 call SUMA_ADD(suma)
 
+! These pets have no place here and can be removed
 dp2 = prc
 pet2 = petv
 
@@ -332,9 +348,8 @@ end subroutine dolyday
 ! SUBROUTINE evapotranspiration(t,rh,rn,canga,gsn,hrs,eemm,etmm)       !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Read internal parameters from "param.dat" file, and io
-!! parameters from "misc_params.dat".
-!! @details
+!> @brief Calculate evapotranspiration
+!! @details etmm is transpiration,eemm evaporation
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
@@ -354,6 +369,8 @@ rho = 1288.4 - 4.103*t
 s = 48.7*exp(0.0532*t)
 gam = 101325.0*1.012/(0.622*lam)
 
+! Transpiration since it uses the canopy conductance (gsn) Eq.38
+! calculated in doly
 if ((ssv(ssp%cohort)%lai%tot>0.1).and.(msv%mv_soil2g>ssp%wilt)) then
   et = (s*rn + rho*1.012*canga*vpd)/(s + gam*(1.0 + canga/gsn))*tgp%p_et
 ! watch dog ajoute par ghislain 
@@ -372,6 +389,7 @@ else
   etmm = 0.0
 endif
 
+! Evaporation,it is without the canopy conductance (gsn)
 ee = (s*rn + rho*1.012*canga*vpd)/(s + gam)
 eemm = (ee*3600.0*hrs)/(lam*1000.0)
 

@@ -21,7 +21,10 @@ contains
 !----------------------------------------------------------------------!
 !> @brief Inclusion of century water model (which is a 'bucket model)
 !! using doly evaporation and interception calculations.
-!! @details
+!! @details lsfc is the field capacity for each layer
+!! lsw is the wilting point for each layer
+!! awl is the relatie root density for each layer 
+!! ladp is the soil depth in mm for each layer
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
@@ -43,6 +46,8 @@ dp2 = prc
 !----------------------------------------------------------------------!
 ! SET parameter for THROUGHFALL.                                       !
 !----------------------------------------------------------------------!
+! tf will hold the parameters for canopy interception at
+! various lai values
 tf(1) = 1.0
 tf(2) = 0.95
 tf(3) = 0.935
@@ -69,6 +74,7 @@ kf = 1.0 - kd
 rem = rlai - int(rlai)
 lai = int(rlai) + 1
 
+! Why is pet2 multiplied by 3?pet2 holds the eemm
 pet3 = pet2
 pet2 = 3.0*pet2
 
@@ -83,6 +89,7 @@ if (pft(ft)%itag==2) then
     lsswc(i) = sswc(i)*tgp%p_city_dep/ssp%soil_depth/10.0
   enddo
 else
+  ! Gets soil layer depth,field capacity,wilting point and saturation in mm
   do i=1,4
     ladp(i) = adp(i)
     lsfc(i) = sfc(i)
@@ -97,6 +104,7 @@ else
   s1in = dp2
 endif
 
+! If temp<0 then precip becomes snow and added to the snow layer
 !----------------------------------------------------------------------!
 if (t<0.0) then
 !----------------------------------------------------------------------!
@@ -109,7 +117,11 @@ else
 !----------------------------------------------------------------------!
 ! Interception water loss (evap mm day-1).                             !
 !----------------------------------------------------------------------!
+! There seems to be a problem with the conditionals in case
+! evap<interc.The intercepted water remains on the canopy and then it's
+! gone in the next iteration
   if (rlai>0) then
+    ! Intercepted water as a function of temperature,why?
     interc = dp2*(1.0 - (tf(lai) + rem*(tf(lai+1) - tf(lai))))
     interc = interc*min(1.0,(0.5 + t/32.0))
     evap = eemm
@@ -127,7 +139,7 @@ else
     ssv(ft)%l_snow = ssv(ft)%l_snow + dp2
   else
 !----------------------------------------------------------------------!
-! Soil water input 0-150mm (s1).                                       !
+! Soil water input 0-150mm (s1) from rain                              !
 !----------------------------------------------------------------------!
     ssv(ft)%soil_h2o(1) = ssv(ft)%soil_h2o(1) + dp2
   endif
@@ -163,8 +175,9 @@ else
 endif
 
 !----------------------------------------------------------------------!
-! Soil water input for first layer.                                    !
+! Soil water input for first layer for snow.                           !
 !----------------------------------------------------------------------!
+! precip has been added to the first layer above.Here it adds melt
 fs = 0.0
 if ((ssv(ft)%l_snow>0.05*(ssv(ft)%l_snow + ssv(ft)%snow)).and.(t>0.0)) &
  then
@@ -174,8 +187,10 @@ if ((ssv(ft)%l_snow>0.05*(ssv(ft)%l_snow + ssv(ft)%snow)).and.(t>0.0)) &
   s1in = s1in + fs
 endif
 
+! Checks each soil layer.If the water holding capacity of the previous
+! layer was exceeded,it sends remaining water to the layer below.
 !----------------------------------------------------------------------!
-! Soil water 150-300mm (ssv(ft)%soil_h2o(2)).                                           !
+! Soil water 150-300mm (ssv(ft)%soil_h2o(2)).                          !
 !----------------------------------------------------------------------!
 f1 = 0.0
 if (ssv(ft)%soil_h2o(1)>lsfc(1)) then
@@ -185,7 +200,7 @@ endif
 ssv(ft)%soil_h2o(2) = ssv(ft)%soil_h2o(2) + f1
 
 !----------------------------------------------------------------------!
-! Soil water 150-300mm (ssv(ft)%soil_h2o(2)).                                           !
+! Soil water 150-300mm (ssv(ft)%soil_h2o(2)).                          !
 !----------------------------------------------------------------------!
 f2 = 0.0
 if (ssv(ft)%soil_h2o(2)>lsfc(2)) then
@@ -195,7 +210,7 @@ endif
 ssv(ft)%soil_h2o(3) = ssv(ft)%soil_h2o(3) + f2
 
 !----------------------------------------------------------------------!
-! Soil water 300-450mm (ssv(ft)%soil_h2o(3)).                                           !
+! Soil water 300-450mm (ssv(ft)%soil_h2o(3)).                          !
 !----------------------------------------------------------------------!
 f3 = 0.0
 if (ssv(ft)%soil_h2o(3)>lsfc(3)) then
@@ -251,11 +266,13 @@ ssv(ft)%soil_h2o(4) = ssv(ft)%soil_h2o(4) - sf - sd
 !----------------------------------------------------------------------!
 ! Calculation of transpiration (tran - mm day-1).                      !
 !----------------------------------------------------------------------!
+! fav is not used
 fav = 0.0
 
 if (ssv(ft)%soil_h2o(1)>lsw(1)) then
   fav = fav + ssv(ft)%soil_h2o(1) - lsw(1)
   rwc(1) = (ssv(ft)%soil_h2o(1) - lsw(1))/(lsfc(1)-lsw(1))
+! Why is this here?
   rwc(1) = 0.0
 else
   rwc(1) = 0.0
@@ -282,6 +299,8 @@ else
   rwc(4) = 0.0
 endif
 
+! rwc is the relative water content calculated above
+! and awl the relative root density for each layer
 w(1) = rwc(1)*awl(1)*ladp(1)
 w(2) = rwc(2)*awl(2)*ladp(2)
 w(3) = rwc(3)*awl(3)*ladp(3)
@@ -291,7 +310,8 @@ ws = w(1) + w(2) + w(3) + w(4)
 tran = etmm
 if (tran>pet2)  tran = pet2
 pet2 = pet2 - tran
-
+! Removes water for each layer for transpiration in
+! proportion to the relative water content calculated above
 if (ws>1e-6) then
   ssv(ft)%soil_h2o(1) = ssv(ft)%soil_h2o(1) - tran*w(1)/ws
   ssv(ft)%soil_h2o(2) = ssv(ft)%soil_h2o(2) - tran*w(2)/ws
@@ -317,6 +337,8 @@ else
   endif
 endif
 
+! Safeties so water content in each layer won't drop below zero
+! It draws water from the layer below to balance it to zero
 if (ssv(ft)%soil_h2o(1)<0.0) then
   ssv(ft)%soil_h2o(2) = ssv(ft)%soil_h2o(2) + ssv(ft)%soil_h2o(1)
   ssv(ft)%soil_h2o(1) = 0.0
@@ -379,7 +401,7 @@ else
 endif
 
 evap = evap + sl + evbs
-
+! Soil moisture trigger for budburst
 do i=1,29
   ssv(ssp%cohort)%sm_trig(31-i) = ssv(ssp%cohort)%sm_trig(30-i)
 enddo

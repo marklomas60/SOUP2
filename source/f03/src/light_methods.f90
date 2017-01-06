@@ -55,7 +55,8 @@ end function dayl
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Calculates total,direct and diffuse radiation for the day
-!! @details Needs interpolated daily values of cloud cover instead
+!! @details Units oof outputs are mol/m2/sec
+!! Needs interpolated daily values of cloud cover instead
 !! of the same one for all the days in the month
 !! @author Mark Lomas
 !! @date Feb 2006

@@ -164,6 +164,8 @@ soil2g = soilw/(ssp%soil_depth*10.0)
 
 !if (((bb==0).and.(msv%mv_soil2g>wtwp+0.25*(wtfc-wtwp))).or. &
 ! ((dsbb>bb2bbmax).and.(msv%mv_soil2g>wtwp+0.1*(wtfc-wtwp)))) then
+
+
 if (((bb==0).and.(soil2g>wtwp+0.25*(wtfc-wtwp))).or. &
  ((dsbb>bb2bbmax).and.(soil2g>wtwp+0.1*(wtfc-wtwp)))) then
 
@@ -181,15 +183,14 @@ if (((bb==0).and.(soil2g>wtwp+0.25*(wtfc-wtwp))).or. &
       if (ssp%tmem(i)>bb0)  bbsum = bbsum + min(bbmax,ssp%tmem(i)-bb0)
     enddo
 
+! If the bbsum exceeds the lim for budburst then
     if ((real(bbsum)>=real(bblim)*exp(-0.01*real(dschill))) &
  .or.(dsbb>bb2bbmax)) then
 !----------------------------------------------------------------------!
 ! Adjust proportion of gpp going into stem production based on suma.   !
 ! This is essentially the LAI control.                                 !
 !----------------------------------------------------------------------!
-!      print*,stemfr
       tsuma = ssv(co)%suma%tot
-!      print*,'tsuma ',tsuma,stemfr,ssv(co)%nppstore(1)
       maint = max(1.0,(real(leafls)/360.0)*1.0)
       tsuma = tsuma - msv%mv_leafmol*1.25/maint*tgp%p_opt
       if (tsuma>msv%mv_leafmol*1.25/maint*tgp%p_opt) tsuma = msv%mv_leafmol*1.25/maint*tgp%p_opt
@@ -217,7 +218,6 @@ if (((bb==0).and.(soil2g>wtwp+0.25*(wtfc-wtwp))).or. &
       endif
       laiinc = (ssv(co)%nppstore(1) - 0.0*ssv(co)%nppstore(3))/msv%mv_leafmol/1.25/12.0
       ssv(co)%nppstore(2) = ssv(co)%nppstore(1)
-!      print*,'laiinc nppstore ',laiinc,ssv(co)%nppstore(1)
     endif
   endif
 endif
@@ -362,6 +362,8 @@ ss = 0
 !----------------------------------------------------------------------!
 ! Check for chilling.                                                  !
 !----------------------------------------------------------------------!
+! If there is no chill,sum um the bbsum which here is not the GDD.
+! If it's value is less than -100,then call it chill. 
 if (chill==0) then
   bbsum = 0.0
   do i=1,20
@@ -373,6 +375,7 @@ if (chill==0) then
     dschill = 1
   endif
 endif
+! If it is chill, then add to days of chill dschill
 if (chill==1) then
   dschill = dschill + 1
 endif
@@ -390,6 +393,9 @@ endif
 soilw = ssv(co)%soil_h2o(1) + ssv(co)%soil_h2o(2) + &
  ssv(co)%soil_h2o(3) + ssv(co)%soil_h2o(4)
 soil2g = soilw/(ssp%soil_depth*10.0)
+
+! If bb=0 which means that we don't have a day of budburst yet and
+! soil mositure adequate,then look for budburst occurence
 if (((bb==0).and.(soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
  ((dsbb>bb2bbmax).and.(soil2g>wtwp+0.1*(wtfc-wtwp)))) then
 
@@ -427,7 +433,7 @@ if (((bb==0).and.(soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
 !----------------------------------------------------------------------!
 ! Budburst occurance.                                                  !
 !----------------------------------------------------------------------!
-!      print*,mnth,day,' budburst'
+!     On what day did budburst occur
       bb = (mnth-1)*30 + day
       bbgs = 0
       dsbb = 0
@@ -453,6 +459,8 @@ endif
 ! Compute length of growing season, and set to zero when equal to      !
 ! growing season.                                                      !
 !----------------------------------------------------------------------!
+! Here it is out of the loop of checking for budburst.As long as bb
+! retains its value it sums up the days of the growing season.
 if (bb>0)  bbgs = bbgs + 1
 if (bbgs-gs>bb2bbmin) then
   bb = 0

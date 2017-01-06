@@ -21,7 +21,12 @@ contains
 ! wtfc,rd,rlai,t,rh,ca,oi,rn,qdirect,qdiff,can2a,can2g,canres,suma,amx,!
 ! amax,gsum,hrs,canga,p,day,nleaf_sum,fpr)                             !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
+!> @brief
+!! @details
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
 subroutine nppcalc(npp_eff,c3,maxc,soilc,soiln,minn,soil2g,wtwp, &
  wtfc,rd,rlai,t,rh,ca,oi,rn,qdirect,qdiff,can2a,can2g,canres,suma,amx,&
  amax,gsum,hrs,canga,p,day,nleaf_sum,fpr)
@@ -79,14 +84,18 @@ suma = 0.0
 sumd = 0.0
 nleaf_sum = 0.0
 
+!Kc from Eq.4
 kc = exp(35.8 - 80.5/(0.00831*tk))
+!Ko from Eq.5
 ko = exp(9.6 - 14.51/(0.00831*tk))*1000.0
+!tau from Eq.2
 tau = exp(-3.949 + 28.99/(0.00831*tk))
 
 ! changed by Ghislain 08/10/03      IF (rlai.GT.0.1) THEN
 q = qdiff + qdirect
 if ((rlai>0.1).and.(q>0.0)) then
-
+  ! Influence of soil water on stomatal conductance (kg).
+  ! From Eq.21 slightly changed
   if (soil2g>wtwp) then
     kg = maxc*((soil2g - wtwp)/(wtfc - wtwp))**tgp%p_kgw
   else
@@ -95,15 +104,20 @@ if ((rlai>0.1).and.(q>0.0)) then
   if (kg>maxc)  kg = maxc
   vmxp1 = npp_eff*kg**tgp%p_nu3
 
-! Nitrogen uptake CHECK.
-! nup = 120.0*(exp(-0.00008*soilc))
+  ! Nitrogen uptake.Very different from Eq.31-Eq.36
+  ! Here it is proportional to soilc and kg
+  ! Then multiplied  by soiln and some constants
+  ! Nitrogen uptake CHECK.
+  ! nup = 120.0*(exp(-0.00008*soilc))
   nupw = tgp%p_nu1*(exp(tgp%p_nu2*soilc))*kg**tgp%p_nu3
   if (nupw<0.0) nupw = 0.0
 
 ! Nitrogen multiplier.
   nmult = soiln*tgp%p_nu4
   if (nmult>=1.0)  nmult = 1.0
-
+  ! All the lines that lead to the calculation of mmult are not
+  ! needed since its not used,variable nup is overwritten in the
+  ! next line
   y1 = 1.3
   y0 = 1.0
   x1 = 50.0
@@ -132,89 +146,50 @@ if ((rlai>0.1).and.(q>0.0)) then
 !----------------------------------------------------------------------!
   do i=1,lai
     lyr = real(i)
-
+    ! Eq.26 to figure allocated nitrogen according to intercepted
+    ! irradiance per canopy layer
     can(i) = exp(coeff*(lyr - 1.0))/sum
 
     upt(i) = up*can(i)
-
+    ! Leaf nitrogen
     nleaf = (upt(i))*tgp%p_nleaf
     if (i<lai) then
       nleaf_sum = nleaf_sum + nleaf
     else
       nleaf_sum = nleaf_sum + nleaf*rem
     endif
-
+    ! Dark respiration proportional to nitrogen uptake
+    ! Different from Eq.27,not controlled by temperature
     dresp(i) = nleaf*tgp%p_dresp
     drespt(i) = dresp(i)
 
     if (kg>1.0e-10) then
 
-!        vm(i) = nleaf*tgp%p_vm
-!        jm(i) = (29.1 + 1.64*vm(i))
-
-!        IF (jm(i).lt.0.0) jm(i) = 0.0
-!        vm(i) = vm(i)/1000000.0
-!        jm(i) = jm(i)/1000000.0
-
-!        xx = (-(2.0*tgp%p_j2-150.0*tgp%p_j3)-(
-!     &(2.0*tgp%p_j2-150.0*tgp%p_j3)**2.0-12.0*tgp%p_j3*
-!     &(tgp%p_j1-50.0*tgp%p_j2+1875.0*tgp%p_j3))**0.5)/6.0/tgp%p_j1
-
-!        IF (t.GT.xx) THEN
-!          jmx(i) = jm(i)*(1.0 + tgp%p_j1*(t-25.0) +
-!     &tgp%p_j2*(t - 25.0)**2 + tgp%p_j3*(t - 25.0)**3)
-!        ELSE
-!          jmx(i) = jm(i)*(1.0 + tgp%p_j1*(xx-25.0) +
-!     &tgp%p_j2*(xx - 25.0)**2 + tgp%p_j3*(xx - 25.0)**3)
-!        ENDIF
-
-!        jmx(i) = jm(i)*(0.4 + t*0.6/30.0)
-!        IF (jmx(i).GT.jm(i))  jmx(i) = jm(i)
-
-!        yy = (-(2.0*tgp%p_v2-150.0*tgp%p_v3)-(
-!     &(2.0*tgp%p_v2-150.0*tgp%p_v3)**2.0-12.0*tgp%p_v3*
-!     &(tgp%p_v1-50.0*tgp%p_v2+1875.0*tgp%p_v3))**0.5)/6.0/tgp%p_v
-!        IF (t.GT.yy) THEN
-!          vmx(i) = vm(i)*(1.0 + tgp%p_v1*(t - 25.0) +
-!     &tgp%p_v2*(t - 25.0)**2 + tgp%p_v3*(t - 25.0)**3)
-!        ELSE
-!          vmx(i) = vm(i)*(1.0 + tgp%p_v1*(yy - 25.0) +
-!     &tgp%p_v2*(yy - 25.0)**2 + tgp%p_v3*(yy - 25.0)**3)
-!        ENDIF
-
-!        vmx(i) = vm(i)*(0.4 + t*0.6/30.0)
-!        IF (vmx(i).GT.vm(i))  vmx(i) = vm(i)
-
-!        xx = (0.25 + (1.0-0.25)/25.0*t)**1.5
 
       vm(i) = nleaf*tgp%p_vm
       vmx(i)=vm(i)*qt1
       if (t>30.0) vmx(i)=qt2
       vmx(i) = vmx(i)*vmxp1
 
-! vmx(i) = vmx(i)*(1.0+0.25*(1.0-ca/35.0))
-
+      ! jmx is light-saturated rate of electron transport Eq.13
       jmx(i) = (29.1 + 1.64*vmx(i))
+      ! vmx is the maximum rate of carboxulation Vmax obtained from
+      ! leaf nitrogen and temperature
       vmx(i) = vmx(i)*1.0e-6
       jmx(i) = jmx(i)*1.0e-6
-
+      
+      ! rd is leaf respiration as a function of vmx
       rd = vmx(i)*0.02
 
-! change Ghislain
-!        irc = q*exp(-0.5*lyr)
-
-!        CALL BEERSLAW(lyr-0.5,rlai,q,0.0,
-!     &       fsunlit(i),qsunlit(i), fshade(i),qshade(i))
 
       call GOUDRIAANSLAW2(lyr-0.5,rlai,qdirect,qdiff,fsunlit(i),&
  qsunlit(i),fshade(i),qshade(i),soilalbedo,leafalbedo,kbeam,kdiff,m,&
  kbeamstar,canopyalbedo,albedobeam,albedodiff)
 
-!        j(i) = 0.24*irc/(1.0 + (0.24**2)*(irc**2)/(jmx(i)**2))
-!     &**0.5
 
 !     calculate separatly the sunlit and shaded light limited 
 !     assimilation rate
+  ! Calculates electron transport J Eq.11
   jp1 = jmx(i)**2
   jsunlit(i)=0.24*qsunlit(i)/(1.0+0.0576*(qsunlit(i)**2)/jp1)**0.5
   jshade(i)=0.24*qshade(i)/(1.0+0.0576*(qshade(i)**2)/jp1)**0.5
@@ -238,10 +213,6 @@ if ((rlai>0.1).and.(q>0.0)) then
 
   enddo
 
-! vm(i) = nleaf*tgp%p_vm
-!      vmx(i)=vm(i)*qt1
-!      if (t>30.0) vmx(i)=qt2
-!      vmx(i) = vmx(i)*vmxp1
 
 !----------------------------------------------------------------------!
 !     fAPAR calculation added here from gh nppcalc.f amf251105
@@ -259,6 +230,7 @@ if ((rlai>0.1).and.(q>0.0)) then
 ! the output xvmx, xjmx and xj are not used anymore
 !      CALL XVJMAX(xvmx,xjmx,xj,t,q,sum,nup,oi,xdresp)
 !----------------------------------------------------------------------!
+  ! Adds up dark resp for the whole canopy
   canres = 0.0
   do i=1,lai
     if (i<lai) then
@@ -288,6 +260,7 @@ else
   canres = 0.0
 endif
 
+! We can get rid of these c1 and c2 calculations
 c1 = 142.4 - 4.8*t
 if (c1>80.0)  c1 = 80.0
 if (c1<8.0)  c1 = 8.0
@@ -321,6 +294,7 @@ do i=1,lai
   if (rlai>0.1) then
     if ((t>0.0).and.(rn>0.0).and.(soil2g>wtwp).and.&
  (fshade(i)+fsunlit(i)>0.1)) then
+      ! This should transform the boundary conductance to molar 
       ga = canga/(8.3144*tk/p)/rlai
 
 !----------------------------------------------------------------------!
@@ -330,11 +304,11 @@ do i=1,lai
       rht = rh
 
       if (c3==1) then
+        ! Calculates assimilation rate,internal pressure and stomatal
+        ! conductance if Wc goes in Eq.1
         call ASSVMAX3(tpav,tppcv,cs,tpgsv,oi,ca,vmx(i),rh,kg,ko,kc,&
  tau,rd,ga,t,p,t154,xdvy,px,oitau1,oitau2,gsmin,kcoiko)
-!        CALL ASSVMAX(tpav,tppcv,cs,tpgsv,oi,ca,vmx(i),rh,kg,ko,kc,tau,&
-! rd,ga,t,p)
-!        print*,tpav
+
 !     make the sum of assimilation, internal concentration and stomatal
 !     conductance.
         a(i)=0.0
@@ -342,11 +316,13 @@ do i=1,lai
         gs(i)=0.0
 
         if (fshade(i)>0.01) then
+          ! Calculates assimilation rate,internal pressure and stomatal
+          ! conductance if J goes in Eq.1
           call ASSJ3(tpaj,tppcj,tpgsj,oi,ca,rh,kg,tau,rd,ga,t,p,&
  jshade(i),t154,xdvy,px,oitau1,oitau2,gsmin)
-!          CALL ASSJ(tpaj,tppcj,tpgsj,oi,ca,rh,kg,tau,rd,ga,t,p,&
-! jshade(i))
-!          print*,'fsh ',tpaj
+          ! Checks which assimilation process is smaller and keeps
+          ! those values of assimilation,partial pressure and stomatal
+          ! conductance 
           call LIMITATIONPROCESS(tpav,tppcv,tpgsv,tpaj,tppcj,tpgsj,&
  ashade,pcshade,gsshade)
           a(i)=a(i)+fshade(i)*ashade

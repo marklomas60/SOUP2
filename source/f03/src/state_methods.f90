@@ -1008,7 +1008,7 @@ end subroutine FT_COVER
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief
-!! @details
+!! @details Structure msv is defined in misc_values
 !! @author Mark Lomas
 !! @date Feb 2006
 !***********************************************************************

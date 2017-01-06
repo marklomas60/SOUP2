@@ -1201,7 +1201,7 @@ end subroutine mkdlit
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief sum_soilcn
-!! @details ! Adds up carbon and nitrogen in the soil for all cohorts
+!! @details ! Adds up carbon and nitrogen in the soil for each cohorts
 !!
 !! @author Mark Lomas
 !! @date Feb 2006
