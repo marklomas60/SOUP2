@@ -311,6 +311,7 @@ soil2g = soilw/(ssp%soil_depth*10.0)
 !----------------------------------------------------------------------!
 !                         DAILY npp                                    !
 !----------------------------------------------------------------------!
+! The first two lines of daynpp do nothing,daynpp is calculated later
 daynpp = can2a*3600.0*hrs/1000000.0 - canres*3600.0*(24.0-hrs)/1000000.0
 daynpp = daynpp*12.0
 resp_l = canres*3600.0*(24.0-hrs)*12.0/1000000.0
@@ -390,6 +391,7 @@ else
 endif
 
 ! Evaporation,it is without the canopy conductance (gsn)
+! but is this potential?
 ee = (s*rn + rho*1.012*canga*vpd)/(s + gam)
 eemm = (ee*3600.0*hrs)/(lam*1000.0)
 

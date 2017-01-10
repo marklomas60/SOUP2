@@ -141,6 +141,8 @@ else
 !----------------------------------------------------------------------!
 ! Soil water input 0-150mm (s1) from rain                              !
 !----------------------------------------------------------------------!
+! Evaporation of the canopy intercepted water has been subtracted from
+! dp2 just above.
     ssv(ft)%soil_h2o(1) = ssv(ft)%soil_h2o(1) + dp2
   endif
 endif
@@ -222,6 +224,7 @@ ssv(ft)%soil_h2o(4) = ssv(ft)%soil_h2o(4) + f3
 !----------------------------------------------------------------------!
 ! Fill up to saturated water content from bottom up.                   !
 !----------------------------------------------------------------------!
+! Also calculates runoff (roff)
 roff = 0.0
 ans1 = lsfc(4) + tgp%p_roff2*(lsswc(4) - lsfc(4))
 if (ssv(ft)%soil_h2o(4)>ans1) then
@@ -266,6 +269,8 @@ ssv(ft)%soil_h2o(4) = ssv(ft)%soil_h2o(4) - sf - sd
 !----------------------------------------------------------------------!
 ! Calculation of transpiration (tran - mm day-1).                      !
 !----------------------------------------------------------------------!
+! If the soil water content for each layer is greater than the wilting
+! point then it calculates the relative water content for each layer
 ! fav is not used
 fav = 0.0
 
@@ -307,6 +312,9 @@ w(3) = rwc(3)*awl(3)*ladp(3)
 w(4) = rwc(4)*awl(4)*ladp(4)
 ws = w(1) + w(2) + w(3) + w(4)
 
+! If the transpiration is greater than the potential
+! then it sets transpiration to potential.It also subtract
+! what is transpired from potential.
 tran = etmm
 if (tran>pet2)  tran = pet2
 pet2 = pet2 - tran
@@ -401,7 +409,7 @@ else
 endif
 
 evap = evap + sl + evbs
-! Soil moisture trigger for budburst
+! Update soil moisture trigger for budburst
 do i=1,29
   ssv(ssp%cohort)%sm_trig(31-i) = ssv(ssp%cohort)%sm_trig(30-i)
 enddo

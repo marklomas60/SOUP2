@@ -362,7 +362,7 @@ ss = 0
 !----------------------------------------------------------------------!
 ! Check for chilling.                                                  !
 !----------------------------------------------------------------------!
-! If there is no chill,sum um the bbsum which here is not the GDD.
+! If there is no chill,sum up the bbsum which here is not the GDD.
 ! If it's value is less than -100,then call it chill. 
 if (chill==0) then
   bbsum = 0.0
@@ -390,6 +390,12 @@ endif
 ! Bubburst, if no budburst set, and sufficient soil moisture, then     !
 ! check for  budburst.                                                 !
 !----------------------------------------------------------------------!
+! Three checks for budburst.First it checks the soil moisture for the
+! current day (soil2g) and whether budburst has already occured (bb).Then
+! it checks whether we had water input in the soil over the past month
+! (sm_trig).Finally,it calculates GDD (bbsum) and checks if it has
+! exceeded a limit. 
+
 soilw = ssv(co)%soil_h2o(1) + ssv(co)%soil_h2o(2) + &
  ssv(co)%soil_h2o(3) + ssv(co)%soil_h2o(4)
 soil2g = soilw/(ssp%soil_depth*10.0)
@@ -413,15 +419,18 @@ if (((bb==0).and.(soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
     do i=1,bbm
       if (ssp%tmem(i)>bb0)  bbsum = bbsum + min(bbmax,ssp%tmem(i)-bb0)
     enddo
-
+    
+    ! If bbsum which here is GDD has exceeded the threshold then
+    ! we have budburst.
     if ((real(bbsum)>=real(bblim)*exp(-0.01*real(dschill))) &
  .or.(dsbb>bb2bbmax)) then
 !----------------------------------------------------------------------!
 ! Adjust proportion of gpp going into stem production based on suma.   !
 ! This is essentially the LAI control.                                 !
 !----------------------------------------------------------------------!
+! leafls is the leaf life span and msv%mv_leafmol is the leaf mol
+! It assigns part of the suma to go to stem 
       tsuma = ssv(co)%suma%tot
-!      print*,'tsuma ',tsuma,stemfr,ssv(co)%nppstore(1)
       maint = max(1.0,(real(leafls)/360.0)*1.0)
       tsuma = tsuma - msv%mv_leafmol*1.25/maint*tgp%p_opt
       if (tsuma>msv%mv_leafmol*1.25/maint*tgp%p_opt) tsuma = msv%mv_leafmol*1.25/maint*tgp%p_opt
@@ -448,9 +457,9 @@ if (((bb==0).and.(soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
         endif
         stemfr = stemfr*0.95
       endif
+! This laiinc is overwritten later,can be removed
       laiinc = (ssv(co)%nppstore(1) - ssv(co)%nppstore(3))/msv%mv_leafmol/1.25/12.0
       ssv(co)%nppstore(2) = ssv(co)%nppstore(1)
-!      print*,'laiinc ',laiinc,tsuma,stemfr
     endif
   endif
 endif
@@ -461,6 +470,9 @@ endif
 !----------------------------------------------------------------------!
 ! Here it is out of the loop of checking for budburst.As long as bb
 ! retains its value it sums up the days of the growing season.
+! If the days of the growing season exceed a threshold then it sets
+! bb to zero.
+
 if (bb>0)  bbgs = bbgs + 1
 if (bbgs-gs>bb2bbmin) then
   bb = 0
@@ -472,6 +484,11 @@ if (dsbb < 500) dsbb = dsbb + 1
 !----------------------------------------------------------------------!
 ! Set LAI increase.                                                    !
 !----------------------------------------------------------------------!
+! Calculates laiinc (why is it calculated above as well?) and adds it
+! to rlai after converting it
+! Every day adds laiinc until the growing season ends (bb=0) see above,
+! or the nppsore is depleted?
+
 if ((bb>0).and.(bbgs<gs).and.(ssv(co)%nppstore(1)>1.0)) then
   laiinc = lairat*(ssv(co)%nppstore(2) - ssv(co)%nppstore(3))/msv%mv_leafmol/1.25/12.0
   if (rlai+laiinc>maxlai)  laiinc = maxlai - rlai
@@ -481,6 +498,9 @@ else
   laiinc = 0.0
 endif
 
+! It checks whether senescence has occured by checking both soil moisture
+! and temperature.If it has laiinc is set to -lai which I guess will
+! set rlai to zero later.Also keeps the julian day of senescence as ss
 !----------------------------------------------------------------------!
 ! Senescence, if rlai is greater than zero, compute senescence.        !
 !----------------------------------------------------------------------!
@@ -569,6 +589,9 @@ if (check_closure) then
  ssv(co)%stem%tot + ssv(co)%root%tot + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
 endif
 
+! Subtracts carbon for new leaves but it does so from both nppstores?
+! Also finds new leaf respiration by adding the respiration of the new
+! leaves (resp_m) but what does 0.25 stands for?
 !----------------------------------------------------------------------!
 ! Pay for new leaves.
 !----------------------------------------------------------------------!
@@ -586,6 +609,7 @@ endif
 ! adjust by laiinc (+ or -), and then sum to get 'rlai'.
 ! 'leafls' is an integer variable of leaf lifespan in days.
 !----------------------------------------------------------------------!
+! leaflit is the leaf litter
 call LAI_ADD(laiinc,leaflit)
 
 !----------------------------------------------------------------------!
@@ -617,6 +641,7 @@ endif
 !----------------------------------------------------------------------!
 ! Pay for days roots if veg exists
 !----------------------------------------------------------------------!
+! A part of nppstore goes to the roots (yy) or rootnpp
 if ((ssv(co)%nppstore(1)>0.0).and.(daynpp>0.0)) then
   yy = ssv(co)%nppstore(1)*tgp%p_rootfr
 else
@@ -767,6 +792,15 @@ if (ssv(co)%suma%no > 0) then
   endif
 endif
 
+! Checks if laiinc>0 which is the net assimilation calculated as suma
+! in doly.For each cohort there will be carbon compartments where this
+! carbon is stored.These compartments can be found in ssv(co)%suma where
+! ssv(co)%suma%no is the number of the compartment,
+! ssv(co)%suma%c(ssv(co)%suma%no)%age the julian day when the compartment
+! was created and ssv(co)%suma%c(ssv(co)%suma%no)%val the carbon
+! in that compartment.Carbon keeps getting added to each compartment
+! until it reaces a certain age in which case a new compartment is created
+! and carbon starts being stored there.
 !----------------------------------------------------------------------!
 ! Add on lai increase, create new compartment if necessary.
 !----------------------------------------------------------------------!
@@ -1114,6 +1148,7 @@ do i=1,ssv(co)%lai%no
   ssv(co)%lai%tot = ssv(co)%lai%tot + ssv(co)%lai%c(i)%val
 enddo
 
+! Leaf litter
 leaflit = leaflit*12.0/pft(co)%sla/18.0
 
 end subroutine lai_dist
