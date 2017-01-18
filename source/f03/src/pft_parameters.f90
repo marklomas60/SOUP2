@@ -38,7 +38,6 @@ type PftParameters
   real(dp)               :: gr0
   real(dp)               :: grf
   real(dp)               :: ppm0 ! Plant density
-  integer                :: cropft
   real(dp),dimension(2)  :: sowthresh
   real(dp),dimension(2)  :: lethal
   real(dp),dimension(9)  :: cardinal
@@ -51,6 +50,8 @@ type PftParameters
   real(dp),dimension(5)  :: fertuse
   integer                :: sowday
   integer,dimension(2)   :: cropgdd
+  real(dp)               :: nfert
+  real(dp)               :: optlai
 end type
 
 type (PftParameters) :: pft(max_cohorts), pft_tab(max_pftps)

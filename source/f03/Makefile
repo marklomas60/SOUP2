@@ -23,19 +23,21 @@ all: $(o)/real_precision.o $(o)/dims.o $(o)/pft_parameters.o $(o)/system_state.o
  $(o)/site_parameters.o $(o)/tuning_parameters.o $(o)/misc_parameters.o \
  $(o)/misc_values.o $(o)/metdos.o $(o)/func.o $(o)/state_methods.o \
  $(o)/open_files.o $(o)/data.o $(o)/weather_generator.o $(o)/veg_dynamics.o \
- $(o)/sdgvm1.o $(o)/read_input.o $(o)/hydrology_methods.o \
+ $(o)/sdgvm1.o $(o)/read_input.o $(o)/hydrology_methods.o $(o)/light_methods.o \
+ $(o)/crops.o \
  $(o)/phenology_methods.o $(o)/sunshade.o $(o)/productivity_methods.o \
- $(o)/doly.o $(o)/soil_methods.o $(o)/light_methods.o $(o)/crops.o $(o)/sdgvm.o
+ $(o)/doly.o $(o)/soil_methods.o $(o)/light_methods.o $(o)/sdgvm.o
 	$(FC) -o $b/sdgvm.exe \
  $(o)/real_precision.o $(o)/dims.o $(o)/pft_parameters.o $(o)/system_state.o \
  $(o)/site_parameters.o $(o)/tuning_parameters.o $(o)/misc_parameters.o \
  $(o)/misc_values.o $(o)/metdos.o $(o)/func.o $(o)/state_methods.o \
  $(o)/open_files.o $(o)/data.o $(o)/weather_generator.o $(o)/veg_dynamics.o \
- $(o)/sdgvm1.o $(o)/read_input.o $(o)/hydrology_methods.o \
+ $(o)/sdgvm1.o $(o)/read_input.o $(o)/hydrology_methods.o $(o)/light_methods.o \
+ $(o)/crops.o \
  $(o)/phenology_methods.o $(o)/sunshade.o $(o)/productivity_methods.o \
- $(o)/doly.o $(o)/soil_methods.o $(o)/light_methods.o $(o)/crops.o $(o)/sdgvm.o -Jmod
+ $(o)/doly.o $(o)/soil_methods.o $(o)/sdgvm.o -Jmod
 
-$(o)/crops.o: $(s)/crops.$(e)
+$(o)/crops.o: $(s)/crops.$(e) $(s)/real_precision.$(e) $(s)/pft_parameters.$(e) $(s)/site_parameters.$(e) $(s)/func.$(e) $(s)/light_methods.$(e)
 	$(FC) -o $(o)/crops.o -c $(s)/crops.$(e) -J$(m)
 
 $(o)/real_precision.o: $(s)/real_precision.$(e)

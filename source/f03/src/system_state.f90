@@ -106,6 +106,7 @@ type SystemState
   integer                             :: dsbb
   integer                             :: chill
   integer                             :: dschill
+  real(dp)                            :: phu
 !----------------------------------------------------------------------*
   type(LaiComps)  :: lai
   type(StemComps) :: stem

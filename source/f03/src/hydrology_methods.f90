@@ -277,7 +277,7 @@ fav = 0.0
 if (ssv(ft)%soil_h2o(1)>lsw(1)) then
   fav = fav + ssv(ft)%soil_h2o(1) - lsw(1)
   rwc(1) = (ssv(ft)%soil_h2o(1) - lsw(1))/(lsfc(1)-lsw(1))
-! Why is this here?
+! It's too small
   rwc(1) = 0.0
 else
   rwc(1) = 0.0

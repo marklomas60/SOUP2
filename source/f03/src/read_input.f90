@@ -506,7 +506,6 @@ pft_tab(ft)%stemx = 0.0
 pft_tab(ft)%gr0 = 0.0
 pft_tab(ft)%grf = 0.0
 pft_tab(ft)%ppm0 = 0.0
-pft_tab(ft)%cropft=0
 pft_tab(ft)%sowthresh(1)=0.0
 pft_tab(ft)%sowthresh(2)=0.0
 pft_tab(ft)%lethal(1)=0.0
@@ -581,7 +580,6 @@ pft_tab(ft)%stemx = 0.0
 pft_tab(ft)%gr0 = 0.0
 pft_tab(ft)%grf = 0.0
 pft_tab(ft)%ppm0 = 0.0
-pft_tab(ft)%cropft=0
 pft_tab(ft)%sowthresh(1)=0.0
 pft_tab(ft)%sowthresh(2)=0.0
 pft_tab(ft)%lethal(1)=0.0
@@ -676,9 +674,9 @@ if (n_fields(st1)==1) then
         stop
       endif
 
-    if (n_fields(st1)/=75) then
+    if (n_fields(st1)/=74) then
       write(*,'('' PROGRAM TERMINATED'')')
-      write(*,*) 'The ft parameterisation must contain 75 fields.'
+      write(*,*) 'The ft parameterisation must contain 74 fields.'
       write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
       stop
     endif
@@ -692,7 +690,7 @@ if (n_fields(st1)==1) then
  pft_tab(ft)%bb0,pft_tab(ft)%bbmax,pft_tab(ft)%bblim,&
  pft_tab(ft)%senm,pft_tab(ft)%sens,pft_tab(ft)%senlim,&
  pft_tab(ft)%stemx,pft_tab(ft)%gr0,pft_tab(ft)%grf,pft_tab(ft)%ppm0,&
- pft_tab(ft)%cropft,pft_tab(ft)%sowthresh(1),pft_tab(ft)%sowthresh(2),pft_tab(ft)%lethal(1),&
+ pft_tab(ft)%sowthresh(1),pft_tab(ft)%sowthresh(2),pft_tab(ft)%lethal(1),&
  pft_tab(ft)%lethal(2),pft_tab(ft)%cardinal(1),pft_tab(ft)%cardinal(2),&
  pft_tab(ft)%cardinal(3),pft_tab(ft)%cardinal(4),pft_tab(ft)%cardinal(5),&
  pft_tab(ft)%cardinal(6),pft_tab(ft)%cardinal(7),pft_tab(ft)%cardinal(8),&
@@ -768,9 +766,9 @@ else
         stop
       endif
 
-      if (n_fields(st1)/=75) then
+      if (n_fields(st1)/=74) then
         write(*,'('' PROGRAM TERMINATED'')')
-        write(*,*) 'The ft parameterisation must contain 75 fields.'
+        write(*,*) 'The ft parameterisation must contain 74 fields.'
         write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
         stop
       endif
@@ -783,7 +781,7 @@ else
  pft_tab(ft)%lrat,pft_tab(ft)%bbmem,pft_tab(ft)%bb0,pft_tab(ft)%bbmax,&
  pft_tab(ft)%bblim,pft_tab(ft)%senm,pft_tab(ft)%sens,pft_tab(ft)%senlim,&
  pft_tab(ft)%stemx,pft_tab(ft)%gr0,pft_tab(ft)%grf,pft_tab(ft)%ppm0,&
- pft_tab(ft)%cropft,pft_tab(ft)%sowthresh(1),pft_tab(ft)%sowthresh(2),pft_tab(ft)%lethal(1),&
+ pft_tab(ft)%sowthresh(1),pft_tab(ft)%sowthresh(2),pft_tab(ft)%lethal(1),&
  pft_tab(ft)%lethal(2),pft_tab(ft)%cardinal(1),pft_tab(ft)%cardinal(2),&
  pft_tab(ft)%cardinal(3),pft_tab(ft)%cardinal(4),pft_tab(ft)%cardinal(5),&
  pft_tab(ft)%cardinal(6),pft_tab(ft)%cardinal(7),pft_tab(ft)%cardinal(8),&

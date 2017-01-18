@@ -474,6 +474,7 @@ ssv(cohort)%bbgs = 0
 ssv(cohort)%dsbb = 0
 ssv(cohort)%chill = 0
 ssv(cohort)%dschill = 0
+ssv(cohort)%phu = 0.0
 
 do i=1,int(pft(cohort)%lls/lai_comp_length)+1
   ssv(cohort)%lai%c(i)%val = 0.0

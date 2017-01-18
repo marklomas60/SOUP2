@@ -18,7 +18,6 @@
 module phenology_methods
 
 
-
 use misc_values
 use system_state
 use pft_parameters
@@ -26,6 +25,8 @@ use site_parameters
 use dims
 use tuning_parameters
 use misc_parameters
+use crops
+use light_methods
 implicit none
 
 contains
@@ -58,6 +59,8 @@ if (pft(co)%phen/=0) then
     call PHENOLOGY1(yield,laiinc)
   elseif (pft(co)%phen==2) then
     call PHENOLOGY2(yield,laiinc)
+  elseif (pft(co)%phen==3) then
+    call PHENOLOGY1(yield,laiinc)
   else
     write(*,*) 'No phenology defined for ',pft(co)%phen,pft(co)%tag
   stop
@@ -541,9 +544,212 @@ ssv(co)%dschill     = dschill
 
 end subroutine phenology2
 
+!**********************************************************************!
+!                   phenology3 :: phenological_methods                 !
+!                   ----------------------------------                 !
+!                                                                      !
+! Used for crops                                                       !
+!                                                                      !
+! SUBROUTINE phenology3()                                              !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief
+!! @details
+!! @author Lyla,EPK
+!! @date Jan 2017
+!----------------------------------------------------------------------!
+subroutine phenology3(yield,laiinc)
+
+real(dp), parameter :: maxlai = 10.9
+
+real(dp) :: wtwp,wtfc,ftagh,stemfr,bb0,bbmax,bblim,sslim,lairat
+real(dp) :: rlai,soilw,soil2g,bbsum,maint,tsuma,laiinc,oldphen
+real(dp) :: dft,dfp,hrs,phen,oldopt,optinc,sssum,yield
+integer :: co,day,mnth,ftdth,bb,ss,bbgs,chill,dschill,leafls,bbm
+integer :: ssm,sss,harvest,i
 
 
 
+!----------------------------------------------------------------------!
+
+
+
+co = ssp%cohort
+
+wtwp = ssp%wilt
+day  = ssp%day
+mnth = ssp%mnth
+
+wtfc     = ssp%field
+ftagh    = pft(co)%crop
+ftdth    = pft(co)%d2h
+stemfr   = ssv(co)%stemfr
+bb       = ssv(co)%bb
+ss       = ssv(co)%ss
+bbgs     = ssv(co)%bbgs
+chill    = ssv(co)%chill
+dschill  = ssv(co)%dschill
+leafls   = pft(co)%lls
+bbm      = pft(co)%bbmem
+bb0      = pft(co)%bb0
+bbmax    = pft(co)%bbmax
+bblim    = pft(co)%bblim
+ssm      = pft(co)%senm
+sss      = pft(co)%sens
+sslim    = pft(co)%senlim
+lairat   = pft(co)%lrat
+
+rlai = ssv(co)%lai%tot
+
+yield = 0.0
+harvest=0;
+ss=0;
+
+soilw = ssv(co)%soil_h2o(1) + ssv(co)%soil_h2o(2) + &
+ ssv(co)%soil_h2o(3) + ssv(co)%soil_h2o(4)
+soil2g = soilw/(ssp%soil_depth*10.0)
+
+
+IF ((bb==0).AND.(soil2g>wtwp+0.25*(wtfc-wtwp))) THEN
+
+! Lyla removed this,maybe we need it as a condition
+!  smtrig = 0.0
+!  do i=1,30
+!    smtrig = smtrig + ssv(co)%sm_trig(i)
+!  enddo
+!  if ((smtrig>30.0).or.(dsbb>bb2bbmax)) then
+
+!----------------------------------------------------------------------!
+! Check for budburst using degree days.                                !
+!----------------------------------------------------------------------!
+  bbsum = 0.0
+  DO i=1,bbm
+    IF(ssp%tmem(i)>bb0)  bbsum = bbsum + MIN(bbmax,ssp%tmem(i)-bb0)
+  ENDDO
+
+  IF(REAL(bbsum).GE.REAL(bblim)) THEN
+!----------------------------------------------------------------------!
+! Adjust proportion of gpp going into stem production based on suma.   !
+! This is essentially the LAI control.                                 !
+!----------------------------------------------------------------------!
+    tsuma = ssv(co)%suma%tot
+    maint = max(1.0,(real(leafls)/360.0)*1.0)
+    tsuma = tsuma - msv%mv_leafmol*1.25/maint*tgp%p_opt
+    IF(tsuma>msv%mv_leafmol*1.25/maint*tgp%p_opt) tsuma = msv%mv_leafmol*1.25/maint*tgp%p_opt
+    IF(tsuma<-msv%mv_leafmol*1.25/maint*tgp%p_opt) tsuma = -msv%mv_leafmol*1.25/maint*tgp%p_opt
+    stemfr = stemfr + tsuma*tgp%p_laimem*12.0
+    IF(stemfr<120.0) stemfr = 120.0
+
+!----------------------------------------------------------------------!
+! Budburst occurance.                                                  !
+!----------------------------------------------------------------------!
+    bb = (mnth-1)*30 + day
+    bbgs = 0
+    
+    IF(stemfr<0.8*ssv(co)%nppstore(1)) THEN
+        ssv(co)%nppstore(3) = ssv(co)%nppstore(1) - stemfr
+      ELSE
+        IF(stemfr<0.75*ssv(co)%nppstore(1)) THEN
+          ssv(co)%nppstore(3) = ssv(co)%nppstore(1) - stemfr
+        ELSE
+          ssv(co)%nppstore(3) = ssv(co)%nppstore(1)*0.25
+        ENDIF
+        stemfr = stemfr*0.8
+    ENDIF !(stemfr<0.8*ssv(co)%nppstore(1))
+    laiinc = (ssv(co)%nppstore(1) - 0.0*ssv(co)%nppstore(3))/msv%mv_leafmol/1.25/12.0
+    ssv(co)%nppstore(2) = ssv(co)%nppstore(1)
+  ENDIF ! (REAL(bbsum).GE.REAL(bblim))
+ENDIF
+
+! Lyla has removed the conditional which terminates the growing season
+IF(bb>0)  bbgs = bbgs + 1
+
+! Check for maturity using degree-days
+! fv is the vernalisation function; fp is the photoperiod function
+oldphen=ssv(co)%phu/pft(co)%cropgdd(1)! previous value
+
+hrs=dayl(ssp%lat,(mnth-1)*30+day)
+
+IF(bb.GT.0.AND.oldphen.LT.1) THEN
+  dft=0.0d0; dfp=0.0d0;
+  IF(oldphen.LT.pft(co)%cropphen(5)) THEN
+    CALL wangengel(pft(co)%cardinal(1),pft(co)%cardinal(2),pft(co)%cardinal(3) &
+    ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(1),pft(co)%photoperiod(2) &
+    ,hrs,dft,dfp)
+    pft(co)%cropgdd(2)=pft(co)%cardinal(1)
+  ELSEIF(oldphen.ge.pft(co)%cropphen(5)) THEN
+    CALL wangengel(pft(co)%cardinal(7),pft(co)%cardinal(8),pft(co)%cardinal(9) &
+    ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(5),pft(co)%photoperiod(6) &
+    ,hrs,dft,dfp)
+    pft(co)%cropgdd(2)=pft(co)%cardinal(7)
+  ENDIF
+  ssv(co)%phu=ssv(co)%phu+ssp%tmem(1)*dft*dfp
+ENDIF ! (bb.gt.0.and.oldphen.lt.1)
+
+! Phenological index of maturity      
+phen=ssv(co)%phu/pft(co)%cropgdd(1)
+
+! If plants are mature (as determined by degree-days) harvest them 
+IF(phen.GE.1) THEN
+  laiinc=-rlai
+  ss=day + (mnth - 1)*30
+  harvest=1
+ELSEIF(phen.GE.pft(co)%cropphen(5)) THEN
+  ! Senescence begins, start killing leaves based on PHU
+  ! Here we follow Eqn 3 or 4 of Bondeau et al 2007
+  laiinc=rlai*((1-phen)/(1.0d0-pft(co)%cropphen(5)))**pft(co)%cropphen(6) &
+    -rlai
+ELSE 
+  !Leaves are still allowed to grow
+  !----------------------------------------------------------------------!
+  ! Set LAI increase.                                                    !
+  !----------------------------------------------------------------------!
+  IF (ssv(co)%nppstore(1).GT.0.0d0) THEN
+    laiinc = lairat*(ssv(co)%nppstore(1) - 0.0*ssv(co)%nppstore(3))/msv%mv_leafmol/1.0/12.0*2.0
+    ! Optimal LAI increase (Neisch et al 2002 SWAT documentation Eqns 18.1.9)
+    ! cropphen(3) and (4) are the shape parameters after Neisch et al 2002
+    oldopt=oldphen/(oldphen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*oldphen))
+    optinc=(phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen)) &
+      -oldopt)*pft(co)%optlai
+    IF(optinc*msv%mv_leafmol*12.0*2.0.LT.ssv(co)%nppstore(1)) laiinc=optinc !THIS LINE REVISE!!!
+    IF(rlai+laiinc>maxlai)  laiinc = maxlai - rlai
+    IF (rlai+laiinc>11.5)  laiinc = 11.5 - rlai
+    IF((rlai>0).and.(ssv(co)%nppstore(1)<0.0)) laiinc = 0.0
+  ELSE
+    laiinc = 0.0
+  ENDIF
+ENDIF ! crop is mature or optimal LAI attained
+
+
+!----------------------------------------------------------------------!
+! Senescence, if rlai is greater than zero, compute senescence.        !
+!----------------------------------------------------------------------!
+IF (rlai>1.0e-6) THEN
+  IF(soil2g<wtwp*0.0) THEN
+  !----------------------------------------------------------------------!
+  ! Senescence event due to soil moisture.                               !
+  !----------------------------------------------------------------------!
+      laiinc = -rlai
+      ss = day + (mnth - 1)*30
+  ELSE
+  !----------------------------------------------------------------------!
+  ! Check for senescence, senescence occurs there are 'sss' days colder  !
+  ! than 'sslim' out of the last 'ssm' days.                             !
+  !----------------------------------------------------------------------!
+      sssum = 0
+      DO i=1,ssm
+        IF (ssp%tmem(i)<sslim)  sssum = sssum + 1
+      ENDDO
+      IF (sssum>=sss) THEN
+        !----------------------------------------------------------------------!
+        ! Senescence event due to temperature.                                 !
+        !----------------------------------------------------------------------!
+        laiinc =-rlai
+        ss = day + (mnth - 1)*30
+      ENDIF
+  ENDIF
+ENDIF
+end subroutine phenology3
 
 
 !**********************************************************************!

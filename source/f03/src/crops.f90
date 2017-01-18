@@ -646,7 +646,7 @@ integer :: nft,ft,sl,coun
 coun=0
 
 do ft=3,nft
-  if(pft_tab(ft)%cropft.EQ.0) cycle
+  if(pft_tab(ft)%phen.NE.3) cycle
   select case (sl)
   case (0)
     coun=coun+1
@@ -689,16 +689,49 @@ do ft=3,nft
   end select
 
 enddo
-
-
-
-
 return
 end subroutine crop_outputs
 
+!**********************************************************************!
+!                                                                      !
+!                      fert_crops :: crops                             !
+!                     ---------------------                            !
+!                                                                      !
+! subroutine fert_crops()                                              !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Fertiliser usage for crops
+!! @details  
+!!
+!! @author LLT<EPK
+!! @date Jan 2017
+!----------------------------------------------------------------------!
+subroutine fert_crops(nft)
+!**********************************************************************!
+implicit none
+
+integer nft,ft
+
+DO ft=3,nft
+  IF(pft_tab(ft)%phen.NE.3) cycle
+  pft_tab(ft)%optlai=pft_tab(ft)%cropphen(1)  
+  ! cropphen gives the optimal LAI range: cropphen(1) is without fertiliser
+  ! cropphen(2) is with maximum fertiliser
+  ! if this crop doesn't normally get fertiliser, then cropphen(2)=cropphen(1)
+  IF(pft_tab(ft)%cropphen(2).GT.pft_tab(ft)%cropphen(1)) THEN
+    ! Fertiliser usage in g/m2/y,This should be read from file,here placeholder
+    pft_tab(ft)%nfert=100.
+    ! get optimal LAI by adding log fert usage (kg/ha) to the nonfertilised LAI
+    ! kg/ha = 1000g/10000m2 so 10 x g/m2 = kg/ha = g/10m2
+    ! Make sure optlai remains in the range specified by cropphen
+    pft_tab(ft)%optlai=max(log10(10.d0*pft_tab(ft)%nfert),0.0d0)+ &
+      pft_tab(ft)%cropphen(1) 
+    pft_tab(ft)%optlai=min(pft_tab(ft)%cropphen(2),pft_tab(ft)%optlai)
+  ENDIF
+ENDDO
 
 
-
+end subroutine fert_crops
 
 
 end module crops
