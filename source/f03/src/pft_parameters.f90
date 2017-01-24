@@ -45,9 +45,7 @@ type PftParameters
   real(dp),dimension(6)  :: photoperiod
   real(dp),dimension(4)  :: croprange
   real(dp),dimension(6)  :: cropphen
-  real(dp),dimension(6)  :: harvest
   real(dp),dimension(2)  :: irrig
-  real(dp),dimension(5)  :: fertuse
   integer                :: sowday
   integer,dimension(2)   :: cropgdd
   real(dp)               :: nfert

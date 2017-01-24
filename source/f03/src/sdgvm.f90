@@ -241,7 +241,7 @@ call crop_outputs(stoutput,nft,2)
  tmp,prc,hum,cld,thty_dys,yr0,year)
     
       call FERT_CROPS(nft)  
-
+      
       call SEASONALITY(tmp,prc,cld,thty_dys,nft,year)
 
 !----------------------------------------------------------------------!
