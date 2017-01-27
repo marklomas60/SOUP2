@@ -365,7 +365,8 @@ ss = 0
 !----------------------------------------------------------------------!
 ! Check for chilling.                                                  !
 !----------------------------------------------------------------------!
-! If there is no chill,sum up the bbsum which here is not the GDD.
+! If there is no chill,sum up the bbsum over last 20 days
+! which here is not the GDD.
 ! If it's value is less than -100,then call it chill. 
 if (chill==0) then
   bbsum = 0.0
@@ -382,6 +383,7 @@ endif
 if (chill==1) then
   dschill = dschill + 1
 endif
+! If days of chill exceed 260 then reset chill
 if (dschill>260) then
   chill = 0
   dschill = 0
@@ -426,13 +428,16 @@ if (((bb==0).and.(soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
     ! If bbsum which here is GDD has exceeded the threshold then
     ! we have budburst.
     if ((real(bbsum)>=real(bblim)*exp(-0.01*real(dschill))) &
- .or.(dsbb>bb2bbmax)) then
+      .or.(dsbb>bb2bbmax)) then
 !----------------------------------------------------------------------!
 ! Adjust proportion of gpp going into stem production based on suma.   !
 ! This is essentially the LAI control.                                 !
 !----------------------------------------------------------------------!
-! leafls is the leaf life span and msv%mv_leafmol is the leaf mol
-! It assigns part of the suma to go to stem 
+      ! Budburst has occured
+      ! ssv(co)%suma%tot is the total leaf carbon in all comp,probably
+      ! tgp%p_opt=1.5 and tgp%P_laimem=0.5
+      ! leafls is the leaf life span which we have set for crops to 180!REVISE
+      ! It assigns part of the suma to go to stem 
       tsuma = ssv(co)%suma%tot
       maint = max(1.0,(real(leafls)/360.0)*1.0)
       tsuma = tsuma - msv%mv_leafmol*1.25/maint*tgp%p_opt
@@ -460,7 +465,7 @@ if (((bb==0).and.(soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
         endif
         stemfr = stemfr*0.95
       endif
-! This laiinc is overwritten later,can be removed
+! This laiinc is overwritten later,can be removed?
       laiinc = (ssv(co)%nppstore(1) - ssv(co)%nppstore(3))/msv%mv_leafmol/1.25/12.0
       ssv(co)%nppstore(2) = ssv(co)%nppstore(1)
     endif
@@ -490,7 +495,7 @@ if (dsbb < 500) dsbb = dsbb + 1
 ! Calculates laiinc (why is it calculated above as well?) and adds it
 ! to rlai after converting it
 ! Every day adds laiinc until the growing season ends (bb=0) see above,
-! or the nppsore is depleted?
+! or the nppsore is depleted below 60?
 
 if ((bb>0).and.(bbgs<gs).and.(ssv(co)%nppstore(1)>1.0)) then
   laiinc = lairat*(ssv(co)%nppstore(2) - ssv(co)%nppstore(3))/msv%mv_leafmol/1.25/12.0
@@ -566,7 +571,7 @@ real(dp) :: wtwp,wtfc,ftagh,stemfr,bb0,bbmax,bblim,sslim,lairat
 real(dp) :: rlai,soilw,soil2g,bbsum,maint,tsuma,laiinc,oldphen
 real(dp) :: dft,dfp,hrs,phen,oldopt,optinc,sssum,yield
 integer :: co,day,mnth,ftdth,bb,ss,bbgs,chill,dschill,leafls,bbm
-integer :: ssm,sss,harvest,i
+integer :: ssm,sss,i
 
 
 
@@ -600,7 +605,6 @@ integer :: ssm,sss,harvest,i
   rlai = ssv(co)%lai%tot
 
   yield = 0.0
-  harvest=0;
   ss=0;
 
   soilw = ssv(co)%soil_h2o(1) + ssv(co)%soil_h2o(2) + &
@@ -677,12 +681,15 @@ integer :: ssm,sss,harvest,i
 
   ! Phenological index of maturity      
   phen=ssv(co)%phu/pft(co)%cropgdd(1)
-
+  
   ! If plants are mature (as determined by degree-days) harvest them 
-  IF(phen.GE.1) THEN
+  IF(phen.GE.1.AND.ssv(co)%harvest.EQ.0) THEN
     laiinc=-rlai
     ss=day + (mnth - 1)*30
-    harvest=1
+    ssv(co)%harvest=1
+    ssv(co)%yield=pft(co)%harvindx* &
+      (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
+      ssv(co)%stem%tot + ssv(co)%root%tot + ssv(co)%bio(1) + ssv(co)%bio(2))
   ELSEIF(phen.GE.pft(co)%cropphen(5)) THEN
     ! Senescence begins, start killing leaves based on PHU
     ! Here we follow Eqn 3 or 4 of Bondeau et al 2007
@@ -967,6 +974,7 @@ end subroutine allocation
 !----------------------------------------------------------------------!
 !> @brief Update suma by adding daily increase and removing via mortality.
 !! @details suma mortality is hardwired at 360 days.
+!! suma_comp_length set to 30 in dims
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!

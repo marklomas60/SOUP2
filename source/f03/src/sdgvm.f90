@@ -150,7 +150,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Write lat/lon in crop output file                                    !
 !----------------------------------------------------------------------!
-call crop_outputs(stoutput,nft,2)
+  CALL CROP_OUTPUTS(stoutput,nft,2)
 
 !----------------------------------------------------------------------!
 ! Read in climate.                                                     !
@@ -221,7 +221,7 @@ call crop_outputs(stoutput,nft,2)
 
       ssp%iyear = iyear
       ssp%year = year
-
+           
       nfix = infix
 
 !----------------------------------------------------------------------!
@@ -267,7 +267,8 @@ call crop_outputs(stoutput,nft,2)
         rootnpp(ft) = 0.0
 
         ssv(ft)%evp = 0.0
-
+        ssv(ft)%harvest = 0
+        
         budo(ft) = 0
         seno(ft) = 0
 
@@ -318,7 +319,7 @@ call crop_outputs(stoutput,nft,2)
 !----------------------------------------------------------------------!
 ! Mix water resources.                                                 !
 !----------------------------------------------------------------------!
-          call MIX_WATER(ftcov,nft)
+!          call MIX_WATER(ftcov,nft)
 
 !----------------------------------------------------------------------!
 
@@ -335,6 +336,8 @@ call crop_outputs(stoutput,nft,2)
 ! nppstore leafnpp stemnpp rootnpp leaflit stemlit rootlit in mols
 !----------------------------------------------------------------------!
             soilt = 0.97*soilt + 0.03*tmp(mnth,day)
+            
+            call IRRIGATE(ssp%cohort,adp,sfc,sw) 
 
             call DOLYDAY(tmp(mnth,day),prc(mnth,day),hum(mnth,day),ca, &
      soilc(ft),soiln(ft),minn(ft),adp,sfc,sw,sswc,awl,kd,kx,daygpp,resp_l,lai(ft), &
@@ -350,9 +353,9 @@ call crop_outputs(stoutput,nft,2)
      s1in,tmp(mnth,day),ssv(ft)%lai%tot,evap,tran,roff,interc,evbs,f2,f3,ft)
             flow1(ft) = flow1(ft) + f2/10.0
             flow2(ft) = flow2(ft) + f3/10.0
-
+            
             call PHENOLOGY(yield,laiinc)
-
+            
             xx = ssv(ft)%nppstore(1)
             call ALLOCATION(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &
      leaflitter,stemnpp(ft),rootnpp(ft),resp_s,resp_r,resp_m,check_closure)
@@ -466,9 +469,9 @@ call crop_outputs(stoutput,nft,2)
 
   enddo
   endif
-
+  
   call GROWTH(nft,lai,stembio,rootbio,check_closure)
-
+  
 !----------------------------------------------------------------------!
 ! Average outputs by cover proportions.                                !
 !----------------------------------------------------------------------!

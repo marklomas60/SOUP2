@@ -504,6 +504,8 @@ enddo
 ssv(cohort)%suma%no = 0
 ssv(cohort)%suma%tot = 0.0
 
+ssv(cohort)%yield = 0.0
+ssv(cohort)%harvest = 0
 ssv(cohort)%stemfr = 0.0
 ssv(cohort)%npp = 0.0
 ssv(cohort)%nps = 0.0

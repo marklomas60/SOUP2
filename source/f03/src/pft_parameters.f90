@@ -50,6 +50,7 @@ type PftParameters
   integer,dimension(2)   :: cropgdd
   real(dp)               :: nfert
   real(dp)               :: optlai
+  real(dp)               :: harvindx
 end type
 
 type (PftParameters) :: pft(max_cohorts), pft_tab(max_pftps)

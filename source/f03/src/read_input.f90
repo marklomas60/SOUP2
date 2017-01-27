@@ -544,6 +544,7 @@ pft_tab(ft)%cropgdd(1)=0
 pft_tab(ft)%cropgdd(2)=0
 pft_tab(ft)%nfert=0.
 pft_tab(ft)%optlai=0.
+pft_tab(ft)%harvindx=0.
 
 ft = 2
 pft_tab(ft)%c3c4 = 0
@@ -609,6 +610,7 @@ pft_tab(ft)%cropgdd(1)=0
 pft_tab(ft)%cropgdd(2)=0
 pft_tab(ft)%nfert=0.
 pft_tab(ft)%optlai=0.
+pft_tab(ft)%harvindx=0.
 
 !----------------------------------------------------------------------!
 ! Read in functional type parameterisation.                            !
@@ -656,9 +658,9 @@ if (n_fields(st1)==1) then
         stop
       endif
 
-    if (n_fields(st1)/=65) then
+    if (n_fields(st1)/=66) then
       write(*,'('' PROGRAM TERMINATED'')')
-      write(*,*) 'The ft parameterisation must contain 65 fields.'
+      write(*,*) 'The ft parameterisation must contain 66 fields.'
       write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
       stop
     endif
@@ -684,7 +686,7 @@ if (n_fields(st1)==1) then
  pft_tab(ft)%cropphen(3),pft_tab(ft)%cropphen(4),pft_tab(ft)%cropphen(5),&
  pft_tab(ft)%cropphen(6),pft_tab(ft)%irrig(1),pft_tab(ft)%irrig(2),&
  pft_tab(ft)%sowday,pft_tab(ft)%cropgdd(1),pft_tab(ft)%cropgdd(2),&
- pft_tab(ft)%nfert,pft_tab(ft)%optlai
+ pft_tab(ft)%nfert,pft_tab(ft)%optlai,pft_tab(ft)%harvindx
 
 
 
@@ -746,9 +748,9 @@ else
         stop
       endif
 
-      if (n_fields(st1)/=65) then
+      if (n_fields(st1)/=66) then
         write(*,'('' PROGRAM TERMINATED'')')
-        write(*,*) 'The ft parameterisation must contain 65 fields.'
+        write(*,*) 'The ft parameterisation must contain 66 fields.'
         write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
         stop
       endif
@@ -773,7 +775,7 @@ else
  pft_tab(ft)%cropphen(3),pft_tab(ft)%cropphen(4),pft_tab(ft)%cropphen(5),&
  pft_tab(ft)%cropphen(6),pft_tab(ft)%irrig(1),pft_tab(ft)%irrig(2),&
  pft_tab(ft)%sowday,pft_tab(ft)%cropgdd(1),pft_tab(ft)%cropgdd(2),&
- pft_tab(ft)%nfert,pft_tab(ft)%optlai
+ pft_tab(ft)%nfert,pft_tab(ft)%optlai,pft_tab(ft)%harvindx
 
 
 

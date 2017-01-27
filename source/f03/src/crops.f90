@@ -10,6 +10,7 @@ use pft_parameters
 use site_parameters
 use func
 use light_methods
+use system_state
 implicit none
 
 contains
@@ -736,10 +737,79 @@ end subroutine crop_outputs
 
 !**********************************************************************!
 !                                                                      !
+!                      irrigate :: crops                               !
+!                     ---------------------                            !
+!                                                                      !
+! subroutine irrigate()                                                !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Decides irrigation and fills up relative soil layers. 
+!! @details sfc is soil field capacity in mm
+!! sw  is soil wilting point in mm
+!! ssv(ft)%soil_h2o is soil water content in mm
+!! We should also consider runoff.Ideally,we would check runoff before
+!! irrigating as it would give us the water available for irrigation.
+!! We would then subtract the water used for irrigation from runoff.
+!! 
+!! @author LLT,EPK
+!! @date Jan 2017
+!----------------------------------------------------------------------!
+SUBROUTINE IRRIGATE(ft,adp,sfc,sw)
+!**********************************************************************!
+  IMPLICIT NONE
+
+  real(dp) :: adp(4),sfc(4),sw(4)
+  real(dp) :: sumh,sumn,sumirr
+  integer :: ft,i
+  !Layers I will check to determine irrigation
+  INTEGER,PARAMETER,DIMENSION(2) :: ll1=[1,2]
+  !Layers I am filling up with irrigation
+  INTEGER,PARAMETER,DIMENSION(2) :: ll2=[1,2]
+ 
+  !Return if its not crop phenology
+  IF(pft(ft)%phen.NE.3) RETURN
+  !Return if lai is small
+  IF(ssv(ft)%lai%tot.LT.0.1) RETURN
+  
+  !Sum up the available water in the soil layers defined 
+  !with the parameter ll1.
+  sumh=0.
+  DO i=1,SIZE(ll1)
+    sumh=sumh+ssv(ft)%soil_h2o(ll1(i))
+  ENDDO
+
+  !Sum up the water in the soil layers defined with the parameter ll1
+  !below which irrigation is triggered.
+  !This is controlled by parameter pft(ft)%irrig(1)
+  !If the value of that parameter is 0.5 then irrigation is 
+  !triggered at 0.5(field capacity+wilting point)
+  sumn=0.
+  DO i=1,SIZE(ll1)
+    sumn=sumn+(sfc(ll1(i))-sw(ll1(i)))*pft(ft)%irrig(1)+sw(ll1(i))
+  ENDDO
+  
+  !Decides irrigation
+  IF(sumh.GT.sumn) RETURN
+ 
+  !In case of irrigation,fills up the water layers defined with the 
+  !parameter ll2 to a fraction of their field capacity controlled
+  !by parameter pft(ft)%irrig(2) which is set to 1.
+  sumirr=0.
+  DO i=1,SIZE(ll2)
+    sumirr=sumirr+pft(ft)%irrig(2)*sfc(ll2(i))-ssv(ft)%soil_h2o(ll2(i))
+    ssv(ft)%soil_h2o(ll2(i))=pft(ft)%irrig(2)*sfc(ll2(i))
+  ENDDO
+  
+
+END SUBROUTINE IRRIGATE
+
+
+!**********************************************************************!
+!                                                                      !
 !                      fert_crops :: crops                             !
 !                     ---------------------                            !
 !                                                                      !
-! subroutine fert_crops()                                              !
+! subroutine fert_crops(nft)                                           !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Effect of fertilizer usage on optimal crop LAI
