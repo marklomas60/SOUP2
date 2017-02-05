@@ -109,7 +109,7 @@ call open_default(stoutput)
 !----------------------------------------------------------------------!
 ! Open crop output files.                                              !
 !----------------------------------------------------------------------!
-call crop_outputs(stoutput,nft,0)
+call CROP_OUTPUTS(stoutput,nft,0)
 
 !----------------------------------------------------------------------!
 ! Open optional output files.                                          !
@@ -324,7 +324,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 
           do ft=1,ssp%cohorts
-          
+
           fpr=0.0
           ssp%cohort = ft
 
@@ -337,7 +337,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
             soilt = 0.97*soilt + 0.03*tmp(mnth,day)
             
-            call IRRIGATE(ssp%cohort,adp,sfc,sw) 
+            call IRRIGATE(ssp%cohort,sfc,sw) 
 
             call DOLYDAY(tmp(mnth,day),prc(mnth,day),hum(mnth,day),ca, &
      soilc(ft),soiln(ft),minn(ft),adp,sfc,sw,sswc,awl,kd,kx,daygpp,resp_l,lai(ft), &
@@ -575,7 +575,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Write var in crop output file                                        !
 !----------------------------------------------------------------------!
-    call crop_outputs(stoutput,nft,3)
+    call CROP_OUTPUTS(stoutput,nft,3)
 
   endif
 
@@ -834,7 +834,7 @@ endif
 !----------------------------------------------------------------------!
 ! Skip line in crop output files.                                      !
 !----------------------------------------------------------------------!
-call crop_outputs(stoutput,nft,4)
+call CROP_OUTPUTS(stoutput,nft,4)
 
 !***********************************************************************
 enddo ! site loop
@@ -945,7 +945,7 @@ endif
 !----------------------------------------------------------------------!
 ! Close crop output files.                                             !
 !----------------------------------------------------------------------!
-call crop_outputs(stoutput,nft,1)
+call CROP_OUTPUTS(stoutput,nft,1)
 
 
 end program sdgvm

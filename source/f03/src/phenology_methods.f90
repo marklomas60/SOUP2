@@ -687,9 +687,10 @@ integer :: ssm,sss,i
     laiinc=-rlai
     ss=day + (mnth - 1)*30
     ssv(co)%harvest=1
+    ! Adds up AGB to find yield at harvest
     ssv(co)%yield=pft(co)%harvindx* &
       (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
-      ssv(co)%stem%tot + ssv(co)%root%tot + ssv(co)%bio(1) + ssv(co)%bio(2))
+      ssv(co)%stem%tot + ssv(co)%bio(1))
   ELSEIF(phen.GE.pft(co)%cropphen(5)) THEN
     ! Senescence begins, start killing leaves based on PHU
     ! Here we follow Eqn 3 or 4 of Bondeau et al 2007

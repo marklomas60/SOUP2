@@ -701,7 +701,12 @@ do ft=3,nft
     coun=coun+1
     open(500+coun,file=stoutput(1:blank(stoutput))//'/'// &
       'site'//'seas.dat')
+    coun=coun+1
+    open(500+coun,file=stoutput(1:blank(stoutput))//'/'// &
+      trim(pft_tab(ft)%tag)//'ryield.dat')
   case (1)
+    coun=coun+1
+    close(500+coun)
     coun=coun+1
     close(500+coun)
     coun=coun+1
@@ -715,6 +720,8 @@ do ft=3,nft
     WRITE(500+coun,'(f7.3,f9.3)',advance='NO') ssp%lat,ssp%lon
     coun=coun+1
     WRITE(500+coun,'(f7.3,f9.3)',advance='NO') ssp%lat,ssp%lon
+    coun=coun+1
+    WRITE(500+coun,'(f7.3,f9.3)',advance='NO') ssp%lat,ssp%lon 
   case (3)
     coun=coun+1
     WRITE(500+coun,'(i4)',advance='NO') pft_tab(ft)%sowday
@@ -722,7 +729,15 @@ do ft=3,nft
     WRITE(500+coun,'(i5)',advance='NO') pft_tab(ft)%cropgdd(1)
     coun=coun+1
     WRITE(500+coun,'(i2)',advance='NO') ssp%iseas
+    coun=coun+1
+    IF(ssp%co2ftmap(ft,1)>0) THEN
+      WRITE(500+coun,'('' '',f9.2)',advance='NO') ssv(ssp%co2ftmap(ft,2))%yield
+    ELSE
+      WRITE(500+coun,'('' '',f9.2)',advance='NO') 0.
+    ENDIF
   case (4)
+    coun=coun+1
+    WRITE(500+coun,*)
     coun=coun+1
     WRITE(500+coun,*)
     coun=coun+1
@@ -754,11 +769,11 @@ end subroutine crop_outputs
 !! @author LLT,EPK
 !! @date Jan 2017
 !----------------------------------------------------------------------!
-SUBROUTINE IRRIGATE(ft,adp,sfc,sw)
+SUBROUTINE IRRIGATE(ft,sfc,sw)
 !**********************************************************************!
   IMPLICIT NONE
 
-  real(dp) :: adp(4),sfc(4),sw(4)
+  real(dp) :: sfc(4),sw(4)
   real(dp) :: sumh,sumn,sumirr
   integer :: ft,i
   !Layers I will check to determine irrigation
