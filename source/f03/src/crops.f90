@@ -11,6 +11,7 @@ use site_parameters
 use func
 use light_methods
 use system_state
+
 implicit none
 
 contains
@@ -848,12 +849,12 @@ DO ft=3,nft
   ! if this crop doesn't normally get fertiliser, then cropphen(2)=cropphen(1)
   IF(pft_tab(ft)%cropphen(2).GT.pft_tab(ft)%cropphen(1)) THEN
     ! Fertiliser usage in g/m2/y,This should be read from file,here placeholder
-    pft_tab(ft)%nfert=100.
+    pft_tab(ft)%fert(1)=100.
     ! get optimal LAI by adding log fert usage (kg/ha) to the nonfertilised LAI
     ! 1g/m2=10kg/hc
     ! kg/ha = 1000g/10000m2 so 10 x g/m2 = kg/ha = g/10m2
     ! Make sure optlai remains in the range specified by cropphen
-    pft_tab(ft)%optlai=max(log10(10.d0*pft_tab(ft)%nfert),0.0d0)+ &
+    pft_tab(ft)%optlai=max(log10(10.d0*pft_tab(ft)%fert(1)),0.0d0)+ &
       pft_tab(ft)%cropphen(1) 
     pft_tab(ft)%optlai=min(pft_tab(ft)%cropphen(2),pft_tab(ft)%optlai)
   ENDIF
@@ -861,6 +862,297 @@ ENDDO
 
 
 end subroutine fert_crops
+
+!**********************************************************************!
+!                                                                      !
+!                      READ_FERTILIZERS :: CROPS                       !
+!                     --------------------------                       !
+!                                                                      !
+! subroutine READ_FERTILIZERS(stfert)                                  !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief 
+!! @details
+!!
+!! @author EPK
+!! @date Feb 2017
+!----------------------------------------------------------------------!
+SUBROUTINE READ_FERTILIZERS (stfert,du,yr0,yrf,lat,lon,nft,cfert)
+                             
+
+REAL(dp) :: latf,lon0,latr,lonr,rrow,rcol,ynorm,xnorm,lat,lon
+REAL(dp) :: ftprop(max_cohorts,3),cfert(max_cohorts,max_years,3)
+INTEGER :: latn,lonn,kode,n,years(1000),nclasses,classes(1000),ift
+INTEGER :: du,nrecl,yr0,yrf,j,i,k,l,col,row,recn,nft,x
+CHARACTER :: stfert*1000,st1*1000,st2*1000,st3*1000
+CHARACTER(len=1),dimension(3) :: f_typ=(/'N','P','K'/)
+
+!----------------------------------------------------------------------!
+! read in the readme file 'readme.dat'.                                !
+!----------------------------------------------------------------------!
+OPEN(99,file=stfert(1:blank(stfert))//'/readme.dat',&
+ status='old',iostat=kode)
+IF(kode/=0) THEN
+  WRITE(*,'('' PROGRAM TERMINATED'')')
+  WRITE(*,*) 'Fertilizer file does not exist.'
+  WRITE(*,'('' "'',A,''/readme.dat"'')') stfert(1:blank(stfert))
+  STOP
+ENDIF
+
+READ(99,*) st1
+st2='CONTINUOUS'
+IF(stcmp(st1,st2)==0) THEN
+  WRITE(*,'('' PROGRAM TERMINATED'')')
+  WRITE(*,*) 'Fertilizers is not a continuous field ?'
+  WRITE(*,*) 'readme.dat should begin with CONTINUOUS'
+  STOP
+ENDIF
+
+READ(99,*)
+READ(99,*) latf,lon0
+READ(99,*)
+READ(99,*) latr,lonr
+READ(99,*)
+READ(99,*) latn,lonn
+READ(99,*)
+READ(99,'(A)') st1
+n = n_fields(st1)
+CALL ST2ARR(st1,years,1000,n)
+READ(99,*)
+READ(99,'(A)') st1
+CLOSE(99)
+nclasses = n_fields(st1)
+! nclasses is the number of fts provided and classes the ft id
+CALL ST2ARR(st1,classes,1000,nclasses)
+
+!----------------------------------------------------------------------!
+IF(du==1) THEN
+!  This works for ftn95
+!  nrecl = 3
+  nrecl = 5
+ELSE
+  nrecl = 4
+ENDIF
+
+IF((n>1).AND.(yr0<years(1))) THEN
+  WRITE(*,'('' PROGRAM TERMINATED'')')
+  WRITE(*,*) 'Can''t start running in ',yr0,&
+ ' since landuse map begin in ',years(1)
+  STOP
+ENDIF
+
+
+!----------------------------------------------------------------------!
+! Find the real(dp) :: row col corresponding to lat and lon.           !
+!----------------------------------------------------------------------!
+! rrow and rcol is the gridcell number for these lats and lons,in decimal
+rrow = (latf - lat)/latr
+rcol = (lon - lon0)/lonr
+
+! ynorm and xnorm is the remainder of the lat and lon
+ynorm = rrow - real(int(rrow))
+xnorm = rcol - real(int(rcol))
+!----------------------------------------------------------------------!
+
+ftprop=0.
+
+j=1
+! For each counting year of the run
+DO i=1,yrf-yr0+1
+  !years holds the fertilizer years available 
+  !If you are looking at the first year or any year when we have data,read file
+  IF((i==1).or.((i+yr0-1)==years(j))) then
+    st2=in2st(years(j))
+    CALL STRIPB(st2)
+    j=j+1
+    ! For each of the classes I have fertilizer data,look for file
+    DO k=1,nclasses
+
+      st3=in2st(classes(k))
+      CALL STRIPB(st3)
+      ! For each of the 3 fertilizers,look for file 
+      DO l=1,size(f_typ,1)
+        OPEN(99,file= &
+   stfert(1:blank(stfert))//'/cont_fert_'//f_typ(l)//'_'//st3(1:blank(st3))//'_'//st2(1:4)//'.dat', & 
+   status='old',form='formatted',access='direct',recl=nrecl,iostat=kode)
+        IF(kode/=0) THEN
+          WRITE(*,'('' PROGRAM TERMINATED'')')
+          WRITE(*,*) 'Fertilizer data-base.'
+          WRITE(*,*) 'File does not exist:'
+          WRITE(*,*) stfert(1:blank(stfert)),'/cont_fert_'//f_typ(l)//'_'//st3(1:blank(st3)),'_',st2(1:4),'.dat'
+          STOP
+        ENDIF
+            
+        !Read record from file for this lat and lon
+        row = INT(rrow)
+        col = INT(rcol)
+        IF ((row>=1).AND.(row<=latn).AND.(col>=1).AND.(col<=lonn)) THEN
+          recn = (row-1)*lonn + col
+          READ(99,'(i3)',rec=recn) x
+        ENDIF
+
+        ftprop(classes(k),l)=x
+             
+        CLOSE(99)
+      ENDDO !End of loop over the fertilizer types
+    ENDDO ! End of loop over the classes
+  ENDIF ! Finished reading files
+  
+  ! Assign fertilizer to cfert(ft,years,fert)
+  DO ift=1,nft
+    cfert(ift,i,:) = ftprop(ift,:)
+  ENDDO
+  
+ENDDO ! End of year loop
+
+
+
+
+
+END SUBROUTINE READ_FERTILIZERS
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                      READ_IRRIGATION :: CROPS                        !
+!                     --------------------------                       !
+!                                                                      !
+! subroutine READ_IRRIGATION(stirr,du,yr0,yrf,lat,lon,nft)             !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief 
+!! @details
+!!
+!! @author EPK
+!! @date Feb 2017
+!----------------------------------------------------------------------!
+SUBROUTINE READ_IRRIGATION (stirr,du,yr0,yrf,lat,lon,nft,cirr)
+
+REAL(dp) :: latf,lon0,latr,lonr,rrow,rcol,ynorm,xnorm,lat,lon
+REAL(dp) :: ftprop(max_cohorts),cirr(max_cohorts,max_years)
+INTEGER :: latn,lonn,kode,n,years(1000),nclasses,classes(1000),ift
+INTEGER :: du,nrecl,yr0,yrf,j,i,k,col,row,x,recn,nft
+CHARACTER :: stirr*1000,st1*1000,st2*1000,st3*1000
+
+!----------------------------------------------------------------------!
+! read in the readme file 'readme.dat'.                                !
+!----------------------------------------------------------------------!
+OPEN(99,file=stirr(1:blank(stirr))//'/readme.dat',&
+ status='old',iostat=kode)
+IF(kode/=0) THEN
+  WRITE(*,'('' PROGRAM TERMINATED'')')
+  WRITE(*,*) 'Irrigation file does not exist.'
+  WRITE(*,'('' "'',A,''/readme.dat"'')') stirr(1:blank(stirr))
+  STOP
+ENDIF
+
+READ(99,*) st1
+st2='CONTINUOUS'
+IF(stcmp(st1,st2)==0) THEN
+  WRITE(*,'('' PROGRAM TERMINATED'')')
+  WRITE(*,*) 'Irrigation is not a continuous field ?'
+  WRITE(*,*) 'readme.dat should begin with CONTINUOUS'
+  STOP
+ENDIF
+
+READ(99,*)
+READ(99,*) latf,lon0
+READ(99,*)
+READ(99,*) latr,lonr
+READ(99,*)
+READ(99,*) latn,lonn
+READ(99,*)
+READ(99,'(A)') st1
+n = n_fields(st1)
+CALL ST2ARR(st1,years,1000,n)
+READ(99,*)
+READ(99,'(A)') st1
+CLOSE(99)
+nclasses = n_fields(st1)
+! nclasses is the number of fts provided and classes the ft id
+CALL ST2ARR(st1,classes,1000,nclasses)
+
+!----------------------------------------------------------------------!
+IF(du==1) THEN
+!  This works for ftn95
+!  nrecl = 3
+  nrecl = 5
+ELSE
+  nrecl = 4
+ENDIF
+
+IF((n>1).AND.(yr0<years(1))) THEN
+  WRITE(*,'('' PROGRAM TERMINATED'')')
+  WRITE(*,*) 'Can''t start running in ',yr0,&
+ ' since landuse map begin in ',years(1)
+  STOP
+ENDIF
+
+
+!----------------------------------------------------------------------!
+! Find the real(dp) :: row col corresponding to lat and lon.           !
+!----------------------------------------------------------------------!
+! rrow and rcol is the gridcell number for these lats and lons,in decimal
+rrow = (latf - lat)/latr
+rcol = (lon - lon0)/lonr
+
+! ynorm and xnorm is the remainder of the lat and lon
+ynorm = rrow - real(int(rrow))
+xnorm = rcol - real(int(rcol))
+!----------------------------------------------------------------------!
+
+ftprop=0.
+
+j=1
+! For each counting year of the run
+DO i=1,yrf-yr0+1
+  !years holds the irrigation years available 
+  !If you are looking at the first year or any year when we have data,read file
+  IF((i==1).or.((i+yr0-1)==years(j))) then
+    st2=in2st(years(j))
+    CALL STRIPB(st2)
+    j=j+1
+    ! For each of the classes I have irrigation data,look for file
+    DO k=1,nclasses
+
+      st3=in2st(classes(k))
+      CALL STRIPB(st3)
+      OPEN(99,file= &
+ stirr(1:blank(stirr))//'/cont_irr_'//st3(1:blank(st3))//'_'//st2(1:4)//'.dat', & 
+ status='old',form='formatted',access='direct',recl=nrecl,iostat=kode)
+      IF(kode/=0) THEN
+        WRITE(*,'('' PROGRAM TERMINATED'')')
+        WRITE(*,*) 'Irrigation data-base.'
+        WRITE(*,*) 'File does not exist:'
+        WRITE(*,*) stirr(1:blank(stirr)),'/cont_irr_',st3(1:blank(st3)),'_',st2(1:4),'.dat'
+        STOP
+      ENDIF
+      
+      !Read record from file for this lat and lon
+      row = INT(rrow)
+      col = INT(rcol)
+      IF ((row>=1).AND.(row<=latn).AND.(col>=1).AND.(col<=lonn)) THEN
+        recn = (row-1)*lonn + col
+        READ(99,'(i3)',rec=recn) x
+      ENDIF
+            
+      ftprop(classes(k))=x
+      
+      CLOSE(99)
+
+    ENDDO ! End of loop over the classes
+  ENDIF ! Finished reading files
+  
+  ! Assign irrigation to cirr(ft,years)
+  DO ift=1,nft
+    cirr(ift,i) = ftprop(ift)
+  ENDDO
+  
+ENDDO ! End of year loop
+
+END SUBROUTINE READ_IRRIGATION
+
 
 
 end module crops

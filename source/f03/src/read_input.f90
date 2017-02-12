@@ -19,14 +19,14 @@ contains
 !                    -----------------------------                     !
 !                                                                      !
 ! SUBROUTINE read_input_file(buff1,stinput,stinit,stoutput,sttxdp,     !
-! mask,stlu,ststats,stco2,xlatf,xlon0,xlatres,xlonres,co2const,initise,!
-! initiseo,speedc, xspeedc,xseed1,spinl,yr0s,cycle,crand,yr0p,yrfp,    !
-! outyears,nyears,yr0,yrf,yearind,idum,yearv,nomdos,otags,omav,ofmt,   !
-! outyears1,outyears2,oymd,otagsn,otagsnft,snpshts,snp_no,out_cov,     !
-! out_bio,out_bud,out_sen,lutab,grassrc,barerc,fireres,luse,l_b_and_c, !
-! soil_chr,topsl,defaulttopsl,sites,latdel,londel,lat_lon,day_mnth,    !
-! thty_dys,xlatresn,xlonresn,ilanduse,nft,xyear0,xyearf,lmor_sc,       !
-! oymdft,iofnft,sit_grd,du,narg)                                       !
+! mask,stlu,stfert,stirr,ststats,stco2,xlatf,xlon0,xlatres,xlonres,    !
+! co2const,initise,initiseo,speedc, xspeedc,xseed1,spinl,yr0s,cycle,   !
+! crand,yr0p,yrfp,outyears,nyears,yr0,yrf,yearind,idum,yearv,nomdos,   !
+! otags,omav,ofmt,outyears1,outyears2,oymd,otagsn,otagsnft,snpshts,    !
+! snp_no,out_cov,out_bio,out_bud,out_sen,lutab,grassrc,barerc,fireres, !
+! luse,l_b_and_c,soil_chr,topsl,defaulttopsl,sites,latdel,londel,      !
+! lat_lon,day_mnth,thty_dys,xlatresn,xlonresn,ilanduse,nft,xyear0,     !
+! xyearf,lmor_sc,oymdft,iofnft,sit_grd,du,narg)                        !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief
@@ -35,9 +35,9 @@ contains
 !! @date Feb 2006
 !----------------------------------------------------------------------!
 subroutine read_input_file(buff1,stinput,stinit,stoutput,sttxdp,stmask,&
- stlu,ststats,stco2,xlatf,xlon0,xlatres,xlonres,co2const,initise,&
- initiseo,speedc, xspeedc,xseed1,spinl,yr0s,cycle,crand,yr0p,yrfp,&
- outyears,nyears,yr0,yrf,yearind,idum,yearv,nomdos,otags,omav,ofmt,&
+ stlu,stfert,stirr,ststats,stco2,xlatf,xlon0,xlatres,xlonres,co2const,&
+ initise,initiseo,speedc, xspeedc,xseed1,spinl,yr0s,cycle,crand,yr0p,&
+ yrfp,outyears,nyears,yr0,yrf,yearind,idum,yearv,nomdos,otags,omav,ofmt,&
  outyears1,outyears2,oymd,otagsn,otagsnft,snpshts,snp_no,out_cov,&
  out_bio,out_bud,out_sen,lutab,grassrc,barerc,fireres,luse,l_b_and_c,&
  soil_chr,topsl,defaulttopsl,sites,latdel,londel,lat_lon,day_mnth,&
@@ -52,7 +52,7 @@ real(dp) :: latdel,londel,lat_lon(2000000,2),iadj,jadj, &
 character :: st1*1000,st2*1000,st3*1000,st4*1000
 character :: st5*1000,otags(100)*1000,ofmt(100)*100
 character :: stinput*1000,stoutput*1000,stinit*1000,stco2*1000
-character :: stmask*1000
+character :: stmask*1000,stfert*1000,stirr*1000
 character :: sttxdp*1000,stlu*1000,ststats*1000,buff1*80,fttags(100)*1000
 integer :: i,du,xyear0,xyearf,xlatresn,xlonresn,kode,ii, &
  xseed1,spinl,yr0s,cycle,yr0p,yrfp,outyears,yr0,yrf,idum, &
@@ -167,6 +167,12 @@ call STRIPB(sttxdp)
 
 read(98,'(A)') stlu
 call STRIPB(stlu)
+
+read(98,'(A)') stfert
+call STRIPB(stfert)
+
+read(98,'(A)') stirr
+call STRIPB(stirr)
 
 read(98,'(A)') stco2
 call STRIPB(stco2)
@@ -539,10 +545,13 @@ pft_tab(ft)%cropphen(5)=0.0
 pft_tab(ft)%cropphen(6)=0.0
 pft_tab(ft)%irrig(1)=0.0
 pft_tab(ft)%irrig(2)=0.0
+pft_tab(ft)%irrig(3)=0.0
 pft_tab(ft)%sowday=0
 pft_tab(ft)%cropgdd(1)=0
 pft_tab(ft)%cropgdd(2)=0
-pft_tab(ft)%nfert=0.
+pft_tab(ft)%fert(1)=0.
+pft_tab(ft)%fert(2)=0.
+pft_tab(ft)%fert(3)=0.
 pft_tab(ft)%optlai=0.
 pft_tab(ft)%harvindx=0.
 
@@ -605,10 +614,13 @@ pft_tab(ft)%cropphen(5)=0.0
 pft_tab(ft)%cropphen(6)=0.0
 pft_tab(ft)%irrig(1)=0.0
 pft_tab(ft)%irrig(2)=0.0
+pft_tab(ft)%irrig(3)=0.0
 pft_tab(ft)%sowday=0
 pft_tab(ft)%cropgdd(1)=0
 pft_tab(ft)%cropgdd(2)=0
-pft_tab(ft)%nfert=0.
+pft_tab(ft)%fert(1)=0.
+pft_tab(ft)%fert(2)=0.
+pft_tab(ft)%fert(3)=0.
 pft_tab(ft)%optlai=0.
 pft_tab(ft)%harvindx=0.
 
@@ -658,9 +670,9 @@ if (n_fields(st1)==1) then
         stop
       endif
 
-    if (n_fields(st1)/=66) then
+    if (n_fields(st1)/=69) then
       write(*,'('' PROGRAM TERMINATED'')')
-      write(*,*) 'The ft parameterisation must contain 66 fields.'
+      write(*,*) 'The ft parameterisation must contain 69 fields.'
       write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
       stop
     endif
@@ -685,8 +697,9 @@ if (n_fields(st1)==1) then
  pft_tab(ft)%croprange(4),pft_tab(ft)%cropphen(1),pft_tab(ft)%cropphen(2),&
  pft_tab(ft)%cropphen(3),pft_tab(ft)%cropphen(4),pft_tab(ft)%cropphen(5),&
  pft_tab(ft)%cropphen(6),pft_tab(ft)%irrig(1),pft_tab(ft)%irrig(2),&
- pft_tab(ft)%sowday,pft_tab(ft)%cropgdd(1),pft_tab(ft)%cropgdd(2),&
- pft_tab(ft)%nfert,pft_tab(ft)%optlai,pft_tab(ft)%harvindx
+ pft_tab(ft)%irrig(3),pft_tab(ft)%sowday,pft_tab(ft)%cropgdd(1),&
+ pft_tab(ft)%cropgdd(2),pft_tab(ft)%fert(1),pft_tab(ft)%fert(2),&
+ pft_tab(ft)%fert(3),pft_tab(ft)%optlai,pft_tab(ft)%harvindx
 
 
 
@@ -748,9 +761,9 @@ else
         stop
       endif
 
-      if (n_fields(st1)/=66) then
+      if (n_fields(st1)/=69) then
         write(*,'('' PROGRAM TERMINATED'')')
-        write(*,*) 'The ft parameterisation must contain 66 fields.'
+        write(*,*) 'The ft parameterisation must contain 69 fields.'
         write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
         stop
       endif
@@ -774,8 +787,9 @@ else
  pft_tab(ft)%croprange(4),pft_tab(ft)%cropphen(1),pft_tab(ft)%cropphen(2),&
  pft_tab(ft)%cropphen(3),pft_tab(ft)%cropphen(4),pft_tab(ft)%cropphen(5),&
  pft_tab(ft)%cropphen(6),pft_tab(ft)%irrig(1),pft_tab(ft)%irrig(2),&
- pft_tab(ft)%sowday,pft_tab(ft)%cropgdd(1),pft_tab(ft)%cropgdd(2),&
- pft_tab(ft)%nfert,pft_tab(ft)%optlai,pft_tab(ft)%harvindx
+ pft_tab(ft)%irrig(3),pft_tab(ft)%sowday,pft_tab(ft)%cropgdd(1),&
+ pft_tab(ft)%cropgdd(2),pft_tab(ft)%fert(1),pft_tab(ft)%fert(2),&
+ pft_tab(ft)%fert(3),pft_tab(ft)%optlai,pft_tab(ft)%harvindx
 
 
 

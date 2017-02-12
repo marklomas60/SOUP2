@@ -45,10 +45,10 @@ type PftParameters
   real(dp),dimension(6)  :: photoperiod
   real(dp),dimension(4)  :: croprange
   real(dp),dimension(6)  :: cropphen
-  real(dp),dimension(2)  :: irrig
+  real(dp),dimension(3)  :: irrig
   integer                :: sowday
   integer,dimension(2)   :: cropgdd
-  real(dp)               :: nfert
+  real(dp),dimension(3)  :: fert
   real(dp)               :: optlai
   real(dp)               :: harvindx
 end type

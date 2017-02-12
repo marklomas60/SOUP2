@@ -43,6 +43,7 @@ real(dp) :: lat,lon,ca,resp,soilt,grassrc,tmp(12,31),prc(12,31),hum(12,31), &
  h2o,adp(4),sfc(4),sw(4),sswc(4),nupc,swc,swf,ssm,xfprob,xno_fires, &
  nfix,daygpp,evap,tran,roff,pet,daily_out(50,max_cohorts,12,31),xx, &
  ans(12,31),interc,evbs,soil_chr(10),cluse(max_cohorts,max_years), &
+ cirr(max_cohorts,max_years),cfert(max_cohorts,max_years,3), &
  soil_chr2(10),fprob,q,qdirect,qdiff,topsl,hrs,fpr,resp_s,resp_r, &
  lmor_sc(3600,max_cohorts),leaflitter,laiinc,daynpp,resp_l,resp_m, &
  pm_tmp,pm_prc,pm_hum,pm_evbs,pm_swc,pm_swf,pm_ssm
@@ -68,6 +69,8 @@ character(len=1000) :: stmask
 character(len=1000) :: country_name
 character(len=1000) :: sttxdp
 character(len=1000) :: stlu
+character(len=1000) :: stfert
+character(len=1000) :: stirr
 character(len=1000) :: ststats
 character(len=80) :: buff1
 
@@ -92,11 +95,11 @@ call read_param(stver)
 ! Read the input file.                                                 !
 !----------------------------------------------------------------------!
 call read_input_file(buff1,stinput,stinit,stoutput,sttxdp,stmask,stlu,&
- ststats, stco2,xlatf,xlon0,xlatres,xlonres,co2const,initise,initiseo,&
- speedc,xspeedc,xseed1,spinl,yr0s,cycle,crand,yr0p,yrfp,outyears,&
- nyears, yr0,yrf,yearind,idum,yearv,nomdos,otags,omav,ofmt,outyears1,&
- outyears2,oymd,otagsn,otagsnft,snpshts,snp_no,out_cov,out_bio,&
- out_bud,out_sen,lutab,grassrc,barerc,fireres,luse,l_b_and_c,&
+ stfert,stirr,ststats, stco2,xlatf,xlon0,xlatres,xlonres,co2const,&
+ initise,initiseo,speedc,xspeedc,xseed1,spinl,yr0s,cycle,crand,yr0p,&
+ yrfp,outyears,nyears, yr0,yrf,yearind,idum,yearv,nomdos,otags,omav,&
+ ofmt,outyears1, outyears2,oymd,otagsn,otagsnft,snpshts,snp_no,out_cov,&
+ out_bio,out_bud,out_sen,lutab,grassrc,barerc,fireres,luse,l_b_and_c,&
  soil_chr,topsl,defaulttopsl,sites,latdel,londel,lat_lon,day_mnth,&
  thty_dys,xlatresn,xlonresn,ilanduse,nft,xyear0,xyearf,lmor_sc,&
  oymdft,iofnft,sit_grd,du,narg)
@@ -171,6 +174,10 @@ do site=1,sites
   call READ_LANDUSE(stlu,ilanduse,yr0,yrf,du,nft,lat,lon,lutab,luse,&
  cluse,l_lu)
 
+  call READ_FERTILIZERS(stfert,du,yr0,yrf,lat,lon,nft,cfert)
+  
+  call READ_IRRIGATION(stirr,du,yr0,yrf,lat,lon,nft,cirr)
+  
 !----------------------------------------------------------------------!
 ! Driving data exists 'if' statement.                                  !
 !----------------------------------------------------------------------!
@@ -216,7 +223,6 @@ do site=1,sites
     call INITIALISE_STATE(initise,nft,cluse,xtmpv,soilt)
     
     do iyear=1,nyears
-      
       year = yearv(iyear)
 
       ssp%iyear = iyear
@@ -239,7 +245,14 @@ do site=1,sites
 !----------------------------------------------------------------------!
       call SET_CLIMATE(xtmpv,xprcv,xhumv,xcldv,withcloudcover,yearv,iyear, &
  tmp,prc,hum,cld,thty_dys,yr0,year)
-    
+      
+      DO ft=1,nft
+        pft_tab(ft)%irrig(3)=cirr(ft,year-yr0+1)
+        pft_tab(ft)%fert(1)=cfert(ft,year-yr0+1,1)
+        pft_tab(ft)%fert(2)=cfert(ft,year-yr0+1,2)
+        pft_tab(ft)%fert(3)=cfert(ft,year-yr0+1,3)
+      ENDDO
+       
       call FERT_CROPS(nft)  
       
       call SEASONALITY(tmp,prc,cld,thty_dys,nft,year)
@@ -248,7 +261,7 @@ do site=1,sites
 ! Set land use through ftprop.                                         !
 !----------------------------------------------------------------------!
       call SET_LANDUSE(ftprop,ilanduse,tmp,prc,nat_map,nft,cluse,year,yr0)
-
+      
       call COVER(nft,tmp,prc,firec,fireres,fprob,ftprop,check_closure)
 
       call INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)

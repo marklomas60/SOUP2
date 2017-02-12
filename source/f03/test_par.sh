@@ -2,7 +2,7 @@
 #$ -l h_rt=48:00:00
 
 #How many qsubs
-nprocesses=500
+nprocesses=600
 dir=/data/sm1epk/SDGVM_runs
 #Input file for run.Several values should be set to ARGUMENT
 inputfile=$dir/test_two_crops_par.dat
@@ -68,6 +68,8 @@ do
   sleep 30
   prunning=`Qstat | grep 'batchh-'|grep 'sm1epk'| wc -l`
 done  
+
+echo Finished jobs starting merging files
   
 #Create output folder
 mkdir -p $outputdir    
@@ -88,6 +90,7 @@ files=`ls $tmpdir/r1`
 #Merges output files
 for i in $(seq 1 $nprocesses)
 do
+  echo merging batch $i
   for file in $files
   do
     cat $tmpdir/r$i/$file >> $outputdir/$file
