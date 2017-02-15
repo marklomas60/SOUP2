@@ -775,46 +775,85 @@ SUBROUTINE IRRIGATE(ft,sfc,sw)
   IMPLICIT NONE
 
   real(dp) :: sfc(4),sw(4)
-  real(dp) :: sumh,sumn,sumirr
+  real(dp) :: sumh,sumn,sumirr,fr_irr,sumi
   integer :: ft,i
   !Layers I will check to determine irrigation
   INTEGER,PARAMETER,DIMENSION(2) :: ll1=[1,2]
   !Layers I am filling up with irrigation
   INTEGER,PARAMETER,DIMENSION(2) :: ll2=[1,2]
  
-  !Return if its not crop phenology
+  ! Return if its not crop phenology
   IF(pft(ft)%phen.NE.3) RETURN
-  !Return if lai is small
+  ! Return if lai is small
   IF(ssv(ft)%lai%tot.LT.0.1) RETURN
-  
-  !Sum up the available water in the soil layers defined 
-  !with the parameter ll1.
+
+  ! Sum up the available water in the soil layers defined 
+  ! with the parameter ll1.
   sumh=0.
   DO i=1,SIZE(ll1)
     sumh=sumh+ssv(ft)%soil_h2o(ll1(i))
   ENDDO
-
-  !Sum up the water in the soil layers defined with the parameter ll1
-  !below which irrigation is triggered.
-  !This is controlled by parameter pft(ft)%irrig(1)
-  !If the value of that parameter is 0.5 then irrigation is 
-  !triggered at 0.5(field capacity+wilting point)
+  
+  ! Fraction of the crop cover that is irrigated
+  ! Divide fraction of irrigated crop cover by fraction of crop cover
+  ! It can be greater than 1 so use MIN
+  fr_irr=MIN(pft(ft)%irrig(3)/ssv(ft)%cov,1.)
+    
+  ! Sum the water in the soil layers defined with the parameter ll1
+  ! below which irrigation is triggered.This is controlled by the 
+  ! parameter pft(ft)%irrig(1)=0.5 and the fraction of crop that is 
+  ! irrigated fr_irr.
+  ! e.g If 100% is irrigated then irrigation is triggered below
+  ! [wilt. point + 0.5*1*(field cap. - wilt.point)]
   sumn=0.
   DO i=1,SIZE(ll1)
-    sumn=sumn+(sfc(ll1(i))-sw(ll1(i)))*pft(ft)%irrig(1)+sw(ll1(i))
+    sumn=sumn+sw(ll1(i))+pft(ft)%irrig(1)*fr_irr*(sfc(ll1(i))-sw(ll1(i)))
   ENDDO
   
-  !Decides irrigation
+  ! OLD WAY,YOU CAN REMOVE
+  !Sum up the water in the soil layers defined with the parameter ll1
+  ! below which irrigation is triggered.
+  ! This is controlled by parameter pft(ft)%irrig(1)
+  ! If the value of that parameter is 0.5 then irrigation is 
+  ! triggered at 0.5(field capacity+wilting point)
+  !
+  !sumn=0.
+  !DO i=1,SIZE(ll1)
+  !  sumn=sumn+(sfc(ll1(i))-sw(ll1(i)))*pft(ft)%irrig(1)+sw(ll1(i))
+  !ENDDO
+  
+  ! Decides irrigation
   IF(sumh.GT.sumn) RETURN
- 
-  !In case of irrigation,fills up the water layers defined with the 
-  !parameter ll2 to a fraction of their field capacity controlled
-  !by parameter pft(ft)%irrig(2) which is set to 1.
+  
+  ! If irrigation is happening,irrigate soil layers defined with the
+  ! parameter ll2 which can be different that ll1 which is used to
+  ! define which soil layers trigg irr.The water added will be again 
+  ! controlled by the parameter pft(ft)%irrig(1)=0.5 and the fraction
+  ! of crop that is irrigated fr_irr.
+  ! e.g If 100% is irrigated then the water in the soil layer must be
+  ! [wilt. point + 0.5*1*(field cap. - wilt.point)+0.5*1*(field cap. - wilt.point)]
+
   sumirr=0.
   DO i=1,SIZE(ll2)
-    sumirr=sumirr+pft(ft)%irrig(2)*sfc(ll2(i))-ssv(ft)%soil_h2o(ll2(i))
-    ssv(ft)%soil_h2o(ll2(i))=pft(ft)%irrig(2)*sfc(ll2(i))
-  ENDDO
+    ! This is the water I want in the soil layer after irrigation
+    sumi=sw(ll2(i))+pft(ft)%irrig(1)*fr_irr*(sfc(ll2(i))-sw(ll2(i)))+&
+      pft(ft)%irrig(1)*fr_irr*(sfc(ll2(i))-sw(ll2(i)))
+    ! If the water I want in greater than the water in the layer
+    IF(sumi.GT.ssv(ft)%soil_h2o(ll2(i))) THEN
+      sumirr=sumi-ssv(ft)%soil_h2o(ll2(i))
+      ssv(ft)%soil_h2o(ll2(i))=sumi
+    ENDIF
+  ENDDO 
+  
+  ! OLD WAY,YOU CAN REMOVE
+  ! In case of irrigation,fills up the water layers defined with the 
+  ! parameter ll2 to a fraction of their field capacity controlled
+  ! by parameter pft(ft)%irrig(2) which is set to 1.
+  !sumirr=0.
+  !DO i=1,SIZE(ll2)
+  !  sumirr=sumirr+pft(ft)%irrig(2)*sfc(ll2(i))-ssv(ft)%soil_h2o(ll2(i))
+  !  ssv(ft)%soil_h2o(ll2(i))=pft(ft)%irrig(2)*sfc(ll2(i))
+  !ENDDO
   
 
 END SUBROUTINE IRRIGATE
@@ -829,8 +868,7 @@ END SUBROUTINE IRRIGATE
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Effect of fertilizer usage on optimal crop LAI
-!! @details As it stands,1g/m2 of fertilizer adds 1 LAI which could be 
-!! too much 
+!! @details
 !!
 !! @author LLT,EPK
 !! @date Jan 2017
@@ -848,14 +886,12 @@ DO ft=3,nft
   ! cropphen(2) is with maximum fertiliser
   ! if this crop doesn't normally get fertiliser, then cropphen(2)=cropphen(1)
   IF(pft_tab(ft)%cropphen(2).GT.pft_tab(ft)%cropphen(1)) THEN
-    ! Fertiliser usage in g/m2/y,This should be read from file,here placeholder
-    pft_tab(ft)%fert(1)=100.
     ! get optimal LAI by adding log fert usage (kg/ha) to the nonfertilised LAI
     ! 1g/m2=10kg/hc
     ! kg/ha = 1000g/10000m2 so 10 x g/m2 = kg/ha = g/10m2
     ! Make sure optlai remains in the range specified by cropphen
-    pft_tab(ft)%optlai=max(log10(10.d0*pft_tab(ft)%fert(1)),0.0d0)+ &
-      pft_tab(ft)%cropphen(1) 
+    pft_tab(ft)%optlai=max(log10(pft_tab(ft)%fert(1))/log10(4.),0.0d0)+ &
+      pft_tab(ft)%cropphen(1)
     pft_tab(ft)%optlai=min(pft_tab(ft)%cropphen(2),pft_tab(ft)%optlai)
   ENDIF
 ENDDO
@@ -934,10 +970,11 @@ ELSE
   nrecl = 4
 ENDIF
 
+! We need to have a map for the first year of the run
 IF((n>1).AND.(yr0<years(1))) THEN
   WRITE(*,'('' PROGRAM TERMINATED'')')
   WRITE(*,*) 'Can''t start running in ',yr0,&
- ' since landuse map begin in ',years(1)
+ ' since fertilizer map begin in ',years(1)
   STOP
 ENDIF
 
@@ -999,6 +1036,7 @@ DO i=1,yrf-yr0+1
   ENDIF ! Finished reading files
   
   ! Assign fertilizer to cfert(ft,years,fert)
+  ! If a year doesn't exist in the map files,it will use the value of the previous year
   DO ift=1,nft
     cfert(ift,i,:) = ftprop(ift,:)
   ENDDO
@@ -1082,10 +1120,11 @@ ELSE
   nrecl = 4
 ENDIF
 
+! We need to have a map for the first year of the run
 IF((n>1).AND.(yr0<years(1))) THEN
   WRITE(*,'('' PROGRAM TERMINATED'')')
   WRITE(*,*) 'Can''t start running in ',yr0,&
- ' since landuse map begin in ',years(1)
+ ' since irrigation map begins in ',years(1)
   STOP
 ENDIF
 
@@ -1107,8 +1146,8 @@ ftprop=0.
 j=1
 ! For each counting year of the run
 DO i=1,yrf-yr0+1
-  !years holds the irrigation years available 
-  !If you are looking at the first year or any year when we have data,read file
+  ! years holds the irrigation years available 
+  ! If you are looking at the first year or any year when we have data,read file
   IF((i==1).or.((i+yr0-1)==years(j))) then
     st2=in2st(years(j))
     CALL STRIPB(st2)
@@ -1145,6 +1184,7 @@ DO i=1,yrf-yr0+1
   ENDIF ! Finished reading files
   
   ! Assign irrigation to cirr(ft,years)
+  ! If a year doesn't exist in the map files,it will use the value of the previous year
   DO ift=1,nft
     cirr(ift,i) = ftprop(ift)
   ENDDO

@@ -111,10 +111,11 @@ if ((rlai>0.1).and.(q>0.0)) then
   ! nup = 120.0*(exp(-0.00008*soilc))
   nupw = tgp%p_nu1*(exp(tgp%p_nu2*soilc))*kg**tgp%p_nu3
   if (nupw<0.0) nupw = 0.0
-
+  
 ! Nitrogen multiplier.
   nmult = soiln*tgp%p_nu4
   if (nmult>=1.0)  nmult = 1.0
+
   ! All the lines that lead to the calculation of mmult are not
   ! needed since its not used,variable nup is overwritten in the
   ! next line
@@ -125,11 +126,11 @@ if ((rlai>0.1).and.(q>0.0)) then
   mmult = minn*(y1 - y0)/(x1 - x0) + (y0*x1 - x0*y1)/(x1 - x0)
   if (mmult>y1)  mmult = y1
   if (mmult<y0)  mmult = y0
-
+  
   nup = nupw*nmult*mmult
   nup = nupw*nmult
   up = nup
-
+  
   if (up<0.0)  up = 0.0
 
 !----------------------------------------------------------------------!

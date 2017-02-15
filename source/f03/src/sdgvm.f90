@@ -247,12 +247,12 @@ do site=1,sites
  tmp,prc,hum,cld,thty_dys,yr0,year)
       
       DO ft=1,nft
-        pft_tab(ft)%irrig(3)=cirr(ft,year-yr0+1)
-        pft_tab(ft)%fert(1)=cfert(ft,year-yr0+1,1)
-        pft_tab(ft)%fert(2)=cfert(ft,year-yr0+1,2)
-        pft_tab(ft)%fert(3)=cfert(ft,year-yr0+1,3)
+        pft_tab(ft)%irrig(3)=0.01*cirr(ft,year-yr0+1)
+        pft_tab(ft)%fert(1)=10*cfert(ft,year-yr0+1,1)
+        pft_tab(ft)%fert(2)=10*cfert(ft,year-yr0+1,2)
+        pft_tab(ft)%fert(3)=10*cfert(ft,year-yr0+1,3)
       ENDDO
-       
+      
       call FERT_CROPS(nft)  
       
       call SEASONALITY(tmp,prc,cld,thty_dys,nft,year)
@@ -357,7 +357,7 @@ do site=1,sites
      evap,tran,roff,interc,evbs,flow1(ft),flow2(ft),year,mnth,day,pet,ht(ft), &
      thty_dys,ft,lmor_sc(:,pft(ft)%itag), &
      nleaf,leaflitter,hrs,q,qdirect,qdiff,fpr,canga,gsn,rn,check_closure)
-
+     
             call EVAPOTRANSPIRATION(tmp(mnth,day),hum(mnth,day),rn,canga,gsn,hrs,eemm,etmm)
             pet = eemm
             pet2 = pet

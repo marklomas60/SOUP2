@@ -1,15 +1,15 @@
 #!/bin/bash
-#$ -l h_rt=48:00:00
+#$ -l h_rt=23:59:59
 
 #How many qsubs
-nprocesses=600
+nprocesses=300
 dir=/data/sm1epk/SDGVM_runs
 #Input file for run.Several values should be set to ARGUMENT
 inputfile=$dir/test_two_crops_par.dat
 #Output final directory
 outputdir=$dir/test_two_crops_par
 #File with sites at resolution
-sites=/home/sm1epk/SDGVM/SDGVM_misc/SDGVM/data/sites/global_30min.dat
+sites=/home/sm1epk/SDGVM/SDGVM_misc/SDGVM/data/sites/global_1deg.dat
 
 #Make temporary output folder
 tmpdir=$dir/tempoutput
@@ -32,7 +32,7 @@ echo sites=$count processes=$nprocesses chunk=$chunk
 for i in $(seq 1 $nprocesses)
 do
   outd=$tmpdir/r$i
-  batchfile=$tmpdir/batchh-$i
+  batchfile=$tmpdir/batch-$i
   mkdir $outd
   let start=($i-1)*$chunk+1
   let end=$i*$chunk
@@ -49,24 +49,24 @@ done
 #Launch the jobs
 for i in $(seq 1 $nprocesses)
 do
-  prunning=`Qstat | grep 'batchh-'|grep 'sm1epk'| wc -l`
+  prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
   while [ $prunning -ge $nprocesses ]
   do
     sleep 1
-    prunning=`Qstat | grep 'batchh-'|grep 'sm1epk'| wc -l`
+    prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
   done
   echo submitting job $i
-  qsub $tmpdir/batchh-$i 1> $tmpdir/output-$i 2> $tmpdir/error-$i
+  qsub $tmpdir/batch-$i 1> $tmpdir/output-$i 2> $tmpdir/error-$i
   sleep 1
 done 
 
 #Wait for final job to finish
 sleep 30
-prunning=`Qstat | grep 'batchh-'|grep 'sm1epk'| wc -l`
+prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
 while [ $prunning -gt 0 ]
 do
   sleep 30
-  prunning=`Qstat | grep 'batchh-'|grep 'sm1epk'| wc -l`
+  prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
 done  
 
 echo Finished jobs starting merging files

@@ -603,7 +603,7 @@ integer :: ssm,sss,i
   lairat   = pft(co)%lrat
 
   rlai = ssv(co)%lai%tot
-
+  
   yield = 0.0
   ss=0;
 
