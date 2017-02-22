@@ -723,7 +723,7 @@ do i=1,yrf-yr0+1
       enddo
 
       call bi_lin(xx,indx,xnorm,ynorm,ans)
-
+      
       x = int(ans+0.5)
       
       classprop(classes(k)) = ans

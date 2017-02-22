@@ -611,7 +611,18 @@ integer :: ssm,sss,i
    ssv(co)%soil_h2o(3) + ssv(co)%soil_h2o(4)
   soil2g = soilw/(ssp%soil_depth*10.0)
 
+  ! Set ssv(co)%sown to 1 if we have sow day
+  IF((day + (mnth - 1)*30).EQ.pft(co)%sowday) THEN 
+    ssv(co)%sown=1
+    ssv(co)%harvest=0
+  ENDIF
 
+  IF(ssv(co)%sown.EQ.0) THEN 
+    ssv(co)%phu=0.
+    laiinc=0.
+    RETURN
+  ENDIF
+  
   IF ((bb==0).AND.(soil2g>wtwp+0.25*(wtfc-wtwp))) THEN
     !----------------------------------------------------------------------!
     ! Check for budburst using degree days.                                !
@@ -687,6 +698,7 @@ integer :: ssm,sss,i
     laiinc=-rlai
     ss=day + (mnth - 1)*30
     ssv(co)%harvest=1
+    ssv(co)%sown=0
     ! Adds up AGB to find yield at harvest
     ssv(co)%yield=pft(co)%harvindx* &
       (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
@@ -709,8 +721,7 @@ integer :: ssm,sss,i
       optinc=(phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen)) &
         -oldopt)*pft(co)%optlai
       IF(optinc*msv%mv_leafmol*12.0*2.0.LT.ssv(co)%nppstore(1)) laiinc=optinc !THIS LINE REVISE!!!
-      IF(rlai+laiinc>maxlai)  laiinc = maxlai - rlai
-      IF (rlai+laiinc>11.5)  laiinc = 11.5 - rlai
+      IF(rlai+laiinc>pft(co)%optlai) laiinc=pft(co)%optlai-rlai 
       IF((rlai>0).and.(ssv(co)%nppstore(1)<0.0)) laiinc = 0.0
     ELSE
       laiinc = 0.0
@@ -748,6 +759,7 @@ integer :: ssm,sss,i
       ENDIF
     ENDIF
   ENDIF
+  
 
   ssv(co)%stemfr      = stemfr
   ssv(co)%bb          = bb

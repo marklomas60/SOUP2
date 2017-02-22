@@ -19,7 +19,7 @@ contains
 !                                                                      !
 ! SUBROUTINE NPPCALC(npp_eff,c3,maxc,soilc,soiln,minn,soil2g,wtwp,     !
 ! wtfc,rd,rlai,t,rh,ca,oi,rn,qdirect,qdiff,can2a,can2g,canres,suma,amx,!
-! amax,gsum,hrs,canga,p,day,nleaf_sum,fpr)                             !
+! amax,gsum,hrs,canga,p,day,nleaf_sum,fpr,ft)                             !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief
@@ -29,7 +29,7 @@ contains
 !----------------------------------------------------------------------!
 subroutine nppcalc(npp_eff,c3,maxc,soilc,soiln,minn,soil2g,wtwp, &
  wtfc,rd,rlai,t,rh,ca,oi,rn,qdirect,qdiff,can2a,can2g,canres,suma,amx,&
- amax,gsum,hrs,canga,p,day,nleaf_sum,fpr)
+ amax,gsum,hrs,canga,p,day,nleaf_sum,fpr,ft)
 !**********************************************************************!
 real(dp) :: suma,sumd,rlai,soilc,soil2g,wtfc,nmult,npp_eff,soiln,y1,y0,&
  x1,x0, mmult,minn,nup,t,tk,up,kc,ko,tau,sum,nleaf_sum,rem,can(12),&
@@ -43,7 +43,7 @@ real(dp) :: suma,sumd,rlai,soilc,soil2g,wtfc,nmult,npp_eff,soiln,y1,y0,&
 ! light-limited assimilation rate (j) and irradiance (q) for sunlit
 ! and shade
 ! fraction of sunlit and shade
-integer :: i,lai,k,c3,day
+integer :: i,lai,k,c3,day,ft
 real(dp) :: soilalbedo,leafalbedo,kbeam,kdiff,m,kbeamstar,canopyalbedo,&
  albedodiff,albedobeam
 !----------------------------------------------------------------------!
@@ -113,8 +113,12 @@ if ((rlai>0.1).and.(q>0.0)) then
   if (nupw<0.0) nupw = 0.0
   
 ! Nitrogen multiplier.
-  nmult = soiln*tgp%p_nu4
-  if (nmult>=1.0)  nmult = 1.0
+  IF(pft(ft)%phen.NE.3) THEN
+    nmult = soiln*tgp%p_nu4
+    if (nmult>=1.0)  nmult = 1.0
+  ELSE
+    nmult = soiln*tgp%p_nu4
+  ENDIF
 
   ! All the lines that lead to the calculation of mmult are not
   ! needed since its not used,variable nup is overwritten in the

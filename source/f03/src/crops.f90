@@ -11,6 +11,7 @@ use site_parameters
 use func
 use light_methods
 use system_state
+use data
 
 implicit none
 
@@ -778,14 +779,16 @@ SUBROUTINE IRRIGATE(ft,sfc,sw)
   real(dp) :: sumh,sumn,sumirr,fr_irr,sumi
   integer :: ft,i
   !Layers I will check to determine irrigation
-  INTEGER,PARAMETER,DIMENSION(2) :: ll1=[1,2]
+  INTEGER,PARAMETER,DIMENSION(3) :: ll1=[1,2,3]
   !Layers I am filling up with irrigation
-  INTEGER,PARAMETER,DIMENSION(2) :: ll2=[1,2]
+  INTEGER,PARAMETER,DIMENSION(3) :: ll2=[1,2,3]
  
   ! Return if its not crop phenology
   IF(pft(ft)%phen.NE.3) RETURN
-  ! Return if lai is small
-  IF(ssv(ft)%lai%tot.LT.0.1) RETURN
+  ! Return if not sown
+  !WRITE(*,*)ssp%day+(ssp%mnth-1)*30,pft(ft)%sowday,ssv(ft)%sown,ssv(ft)%harvest&
+  !  ,ssv(ft)%phu,ssv(ft)%lai%tot
+  IF(ssv(ft)%sown.EQ.0) RETURN
 
   ! Sum up the available water in the soil layers defined 
   ! with the parameter ll1.
@@ -794,67 +797,36 @@ SUBROUTINE IRRIGATE(ft,sfc,sw)
     sumh=sumh+ssv(ft)%soil_h2o(ll1(i))
   ENDDO
   
-  ! Fraction of the crop cover that is irrigated
-  ! Divide fraction of irrigated crop cover by fraction of crop cover
-  ! It can be greater than 1 so use MIN
-  fr_irr=MIN(pft(ft)%irrig(3)/ssv(ft)%cov,1.)
-    
+  ! Fraction of the crop that is irrigated as read from file
+  fr_irr=pft(ft)%irrig(3)
+
   ! Sum the water in the soil layers defined with the parameter ll1
   ! below which irrigation is triggered.This is controlled by the 
-  ! parameter pft(ft)%irrig(1)=0.5 and the fraction of crop that is 
+  ! parameter pft(ft)%irrig(1)=-1 and the fraction of crop that is 
   ! irrigated fr_irr.
-  ! e.g If 100% is irrigated then irrigation is triggered below
-  ! [wilt. point + 0.5*1*(field cap. - wilt.point)]
   sumn=0.
   DO i=1,SIZE(ll1)
-    sumn=sumn+sw(ll1(i))+pft(ft)%irrig(1)*fr_irr*(sfc(ll1(i))-sw(ll1(i)))
+    sumn=sumn+sw(ll1(i))+(1-EXP(pft(ft)%irrig(1)*fr_irr))*(sfc(ll1(i))-sw(ll1(i)))
   ENDDO
-  
-  ! OLD WAY,YOU CAN REMOVE
-  !Sum up the water in the soil layers defined with the parameter ll1
-  ! below which irrigation is triggered.
-  ! This is controlled by parameter pft(ft)%irrig(1)
-  ! If the value of that parameter is 0.5 then irrigation is 
-  ! triggered at 0.5(field capacity+wilting point)
-  !
-  !sumn=0.
-  !DO i=1,SIZE(ll1)
-  !  sumn=sumn+(sfc(ll1(i))-sw(ll1(i)))*pft(ft)%irrig(1)+sw(ll1(i))
-  !ENDDO
   
   ! Decides irrigation
   IF(sumh.GT.sumn) RETURN
-  
+
   ! If irrigation is happening,irrigate soil layers defined with the
   ! parameter ll2 which can be different that ll1 which is used to
   ! define which soil layers trigg irr.The water added will be again 
-  ! controlled by the parameter pft(ft)%irrig(1)=0.5 and the fraction
+  ! controlled by the parameter pft(ft)%irrig(2)=-2 and the fraction
   ! of crop that is irrigated fr_irr.
-  ! e.g If 100% is irrigated then the water in the soil layer must be
-  ! [wilt. point + 0.5*1*(field cap. - wilt.point)+0.5*1*(field cap. - wilt.point)]
-
   sumirr=0.
   DO i=1,SIZE(ll2)
     ! This is the water I want in the soil layer after irrigation
-    sumi=sw(ll2(i))+pft(ft)%irrig(1)*fr_irr*(sfc(ll2(i))-sw(ll2(i)))+&
-      pft(ft)%irrig(1)*fr_irr*(sfc(ll2(i))-sw(ll2(i)))
+    sumi=sw(ll2(i))+(1-EXP(pft(ft)%irrig(2)*fr_irr))*(sfc(ll2(i))-sw(ll2(i)))
     ! If the water I want in greater than the water in the layer
     IF(sumi.GT.ssv(ft)%soil_h2o(ll2(i))) THEN
       sumirr=sumi-ssv(ft)%soil_h2o(ll2(i))
       ssv(ft)%soil_h2o(ll2(i))=sumi
     ENDIF
   ENDDO 
-  
-  ! OLD WAY,YOU CAN REMOVE
-  ! In case of irrigation,fills up the water layers defined with the 
-  ! parameter ll2 to a fraction of their field capacity controlled
-  ! by parameter pft(ft)%irrig(2) which is set to 1.
-  !sumirr=0.
-  !DO i=1,SIZE(ll2)
-  !  sumirr=sumirr+pft(ft)%irrig(2)*sfc(ll2(i))-ssv(ft)%soil_h2o(ll2(i))
-  !  ssv(ft)%soil_h2o(ll2(i))=pft(ft)%irrig(2)*sfc(ll2(i))
-  !ENDDO
-  
 
 END SUBROUTINE IRRIGATE
 
@@ -916,10 +888,10 @@ end subroutine fert_crops
 SUBROUTINE READ_FERTILIZERS (stfert,du,yr0,yrf,lat,lon,nft,cfert)
                              
 
-REAL(dp) :: latf,lon0,latr,lonr,rrow,rcol,ynorm,xnorm,lat,lon
+REAL(dp) :: latf,lon0,latr,lonr,rrow,rcol,ynorm,xnorm,lat,lon,ans,xx(4,4)
 REAL(dp) :: ftprop(max_cohorts,3),cfert(max_cohorts,max_years,3)
 INTEGER :: latn,lonn,kode,n,years(1000),nclasses,classes(1000),ift
-INTEGER :: du,nrecl,yr0,yrf,j,i,k,l,col,row,recn,nft,x
+INTEGER :: du,nrecl,yr0,yrf,j,i,k,l,col,row,recn,nft,x,ii,jj,indx(4,4)
 CHARACTER :: stfert*1000,st1*1000,st2*1000,st3*1000
 CHARACTER(len=1),dimension(3) :: f_typ=(/'N','P','K'/)
 
@@ -1019,18 +991,35 @@ DO i=1,yrf-yr0+1
           WRITE(*,*) stfert(1:blank(stfert)),'/cont_fert_'//f_typ(l)//'_'//st3(1:blank(st3)),'_',st2(1:4),'.dat'
           STOP
         ENDIF
-            
-        !Read record from file for this lat and lon
-        row = INT(rrow)
-        col = INT(rcol)
-        IF ((row>=1).AND.(row<=latn).AND.(col>=1).AND.(col<=lonn)) THEN
-          recn = (row-1)*lonn + col
-          READ(99,'(i3)',rec=recn) x
-        ENDIF
+        
+              
+        DO ii=1,4
+          DO jj=1,4
+            row = INT(rrow)+jj-1
+            col = INT(rcol)+ii-1
+            IF ((row>=1).AND.(row<=latn).AND.(col>=1).AND.(col<=lonn)) THEN
+              recn = (row-1)*lonn + col
+              READ(99,'(i3)',rec=recn) x 
+              xx(ii,jj) = REAL(x)
+              IF (x<200) THEN
+                indx(ii,jj) = 1
+              ELSE
+                indx(ii,jj) = 0
+              ENDIF
+            ELSE
+              indx(ii,jj) = -1
+            ENDIF
+          ENDDO
+        ENDDO
 
-        ftprop(classes(k),l)=x
-             
+        CALL bi_lin(xx,indx,xnorm,ynorm,ans)
+
+        x = INT(ans+0.5)
+        
+        ftprop(classes(k),l) = ans
         CLOSE(99)
+
+
       ENDDO !End of loop over the fertilizer types
     ENDDO ! End of loop over the classes
   ENDIF ! Finished reading files
@@ -1067,10 +1056,10 @@ END SUBROUTINE READ_FERTILIZERS
 !----------------------------------------------------------------------!
 SUBROUTINE READ_IRRIGATION (stirr,du,yr0,yrf,lat,lon,nft,cirr)
 
-REAL(dp) :: latf,lon0,latr,lonr,rrow,rcol,ynorm,xnorm,lat,lon
+REAL(dp) :: latf,lon0,latr,lonr,rrow,rcol,ynorm,xnorm,lat,lon,xx(4,4),ans
 REAL(dp) :: ftprop(max_cohorts),cirr(max_cohorts,max_years)
 INTEGER :: latn,lonn,kode,n,years(1000),nclasses,classes(1000),ift
-INTEGER :: du,nrecl,yr0,yrf,j,i,k,col,row,x,recn,nft
+INTEGER :: du,nrecl,yr0,yrf,j,i,k,col,row,x,recn,nft,ii,jj,indx(4,4)
 CHARACTER :: stirr*1000,st1*1000,st2*1000,st3*1000
 
 !----------------------------------------------------------------------!
@@ -1168,17 +1157,32 @@ DO i=1,yrf-yr0+1
         STOP
       ENDIF
       
-      !Read record from file for this lat and lon
-      row = INT(rrow)
-      col = INT(rcol)
-      IF ((row>=1).AND.(row<=latn).AND.(col>=1).AND.(col<=lonn)) THEN
-        recn = (row-1)*lonn + col
-        READ(99,'(i3)',rec=recn) x
-      ENDIF
-            
-      ftprop(classes(k))=x
+      DO ii=1,4
+        DO jj=1,4
+          row = INT(rrow)+jj-1
+          col = INT(rcol)+ii-1
+          if ((row>=1).AND.(row<=latn).AND.(col>=1).AND.(col<=lonn)) THEN
+            recn = (row-1)*lonn + col
+            READ(99,'(i3)',rec=recn) x 
+            xx(ii,jj) = REAL(x)
+            IF (x<200) THEN
+              indx(ii,jj) = 1
+            ELSE
+              indx(ii,jj) = 0
+            ENDIF
+          ELSE
+            indx(ii,jj) = -1
+          ENDIF
+        ENDDO
+      ENDDO
+
+      CALL bi_lin(xx,indx,xnorm,ynorm,ans)
       
+      x = INT(ans+0.5)
+      
+      ftprop(classes(k)) = ans
       CLOSE(99)
+
 
     ENDDO ! End of loop over the classes
   ENDIF ! Finished reading files

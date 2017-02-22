@@ -247,9 +247,13 @@ do site=1,sites
  tmp,prc,hum,cld,thty_dys,yr0,year)
       
       DO ft=1,nft
+        !Irrigation in fraction of gridcell that is irrigated per crop
         pft_tab(ft)%irrig(3)=0.01*cirr(ft,year-yr0+1)
+        !Nitrogen in kh/ha
         pft_tab(ft)%fert(1)=10*cfert(ft,year-yr0+1,1)
+        !Phosphorus in kh/ha
         pft_tab(ft)%fert(2)=10*cfert(ft,year-yr0+1,2)
+        !Potassium in kh/ha
         pft_tab(ft)%fert(3)=10*cfert(ft,year-yr0+1,3)
       ENDDO
       
@@ -280,11 +284,10 @@ do site=1,sites
         rootnpp(ft) = 0.0
 
         ssv(ft)%evp = 0.0
-        ssv(ft)%harvest = 0
-        
+
         budo(ft) = 0
         seno(ft) = 0
-
+        
 !----------------------------------------------------------------------!
 ! Height (m) ccn  ht(ft) = 0.807*(laimax(ft)**2.13655)                 !
 !----------------------------------------------------------------------!
@@ -292,12 +295,12 @@ do site=1,sites
         if (ht(ft)>50.0)  ht(ft)=50.0
 
       enddo
-
+      
 !----------------------------------------------------------------------!
 ! START OF MONTH LOOP                                                  !
 !----------------------------------------------------------------------!
       do mnth=1,12
-
+        
         ssp%mnth = mnth
 
         call SUM_SOILCN(soilc,soiln,minn)
@@ -335,14 +338,19 @@ do site=1,sites
 !          call MIX_WATER(ftcov,nft)
 
 !----------------------------------------------------------------------!
-
           do ft=1,ssp%cohorts
-
+          
           fpr=0.0
           ssp%cohort = ft
 
           if (ssv(ft)%cov>0.0) then
-
+          
+            IF(pft(ft)%fert(1).LE.0.0) THEN
+              nfix=0.5
+            ELSE
+              nfix=0.1*pft(ft)%fert(1)          
+            ENDIF
+            
             call SET_MISC_VALUES(pft(ft)%sla,tmp(mnth,day))
 
 !----------------------------------------------------------------------!
@@ -351,13 +359,13 @@ do site=1,sites
             soilt = 0.97*soilt + 0.03*tmp(mnth,day)
             
             call IRRIGATE(ssp%cohort,sfc,sw) 
-
+            
             call DOLYDAY(tmp(mnth,day),prc(mnth,day),hum(mnth,day),ca, &
      soilc(ft),soiln(ft),minn(ft),adp,sfc,sw,sswc,awl,kd,kx,daygpp,resp_l,lai(ft), &
      evap,tran,roff,interc,evbs,flow1(ft),flow2(ft),year,mnth,day,pet,ht(ft), &
      thty_dys,ft,lmor_sc(:,pft(ft)%itag), &
      nleaf,leaflitter,hrs,q,qdirect,qdiff,fpr,canga,gsn,rn,check_closure)
-     
+            
             call EVAPOTRANSPIRATION(tmp(mnth,day),hum(mnth,day),rn,canga,gsn,hrs,eemm,etmm)
             pet = eemm
             pet2 = pet
@@ -368,7 +376,12 @@ do site=1,sites
             flow2(ft) = flow2(ft) + f3/10.0
             
             call PHENOLOGY(yield,laiinc)
-            
+
+!         IF(ssp%year.EQ.2005.AND.pft(ft)%phen.EQ.3) THEN
+!           WRITE(*,*)mnth,day,ssv(ft)%sown,ssv(ft)%harvest,ssv(ft)%lai%tot,&
+!             pft(ft)%optlai,laiinc,pft(ft)%irrig(3),ssv(ft)%soil_h2o(2)
+!         ENDIF   
+
             xx = ssv(ft)%nppstore(1)
             call ALLOCATION(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &
      leaflitter,stemnpp(ft),rootnpp(ft),resp_s,resp_r,resp_m,check_closure)
@@ -377,7 +390,7 @@ do site=1,sites
 
             call SOIL_DYNAMICS2(pet,prc(mnth,day),tmp(mnth,day),f2/10.0,f3/10.0,nfix, &
      nci,sresp(ft),lch(ft),ca,site,year,yr0,yrf,speedc,ft,check_closure)
-
+    
 !----------------------------------------------------------------------!
             swc = ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2)+ssv(ft)%soil_h2o(3)+ssv(ft)%soil_h2o(4)
             swf = (swc-sw(1)-sw(2)-sw(3)-sw(4))/(sfc(1)+sfc(2)+sfc(3)+sfc(4)-sw(1)-sw(2)-sw(3)-sw(4))

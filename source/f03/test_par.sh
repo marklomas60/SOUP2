@@ -2,7 +2,7 @@
 #$ -l h_rt=23:59:59
 
 #How many qsubs
-nprocesses=300
+nprocesses=60
 dir=/data/sm1epk/SDGVM_runs
 #Input file for run.Several values should be set to ARGUMENT
 inputfile=$dir/test_two_crops_par.dat
@@ -41,7 +41,7 @@ do
     end=$count
   fi
   echo "#!/bin/bash">> $batchfile
-  echo "#$ -l h_rt=08:00:00">> $batchfile
+  echo "#$ -l h_rt=18:00:00">> $batchfile
   echo "module load compilers/gcc/5.2">> $batchfile
   echo "./sdgvm.exe $inputfile $outd $sites $start $end">> $batchfile
 done
@@ -52,12 +52,12 @@ do
   prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
   while [ $prunning -ge $nprocesses ]
   do
-    sleep 1
+    sleep 10
     prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
   done
   echo submitting job $i
   qsub $tmpdir/batch-$i 1> $tmpdir/output-$i 2> $tmpdir/error-$i
-  sleep 1
+  sleep 10
 done 
 
 #Wait for final job to finish

@@ -272,7 +272,7 @@ npp_eff = 1.0
 if (veg) then
   call NPPCALC(npp_eff,c3c4,maxc,soilc,soiln,minn,soil2g,wtwp,wtfc, &
  rd,rlai,t,rh,ca,oi,rn,qdirect,qdiff,can2a,can2g,canres,suma, &
- amx,amax,gsum,hrs,canga/1.3,p,day,nleaf,fpr)
+ amx,amax,gsum,hrs,canga/1.3,p,day,nleaf,fpr,ft)
 
 !      write(*,*) 'o',canga,can2a,can2g,canres,suma,gsum
 
