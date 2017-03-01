@@ -88,7 +88,7 @@ contains
 !! @author LLT,EPK 
 !! @date Oct 2016
 !----------------------------------------------------------------------!
-subroutine seasonality(tmp,prc,cld,thty_dys,nft,year)
+subroutine seasonality(tmp,prc,cld,thty_dys,nft,year,nn1)
 !**********************************************************************!
 implicit none
 real(dp) :: tmp(12,31),prc(12,31),cld(12)
@@ -97,7 +97,7 @@ integer  :: thty_dys,nft,year
 real(dp) :: museas,seastmp,seasprc,hrs(12)
 integer  :: iseas,mdoy(12),mmid(12),mnth,day,ft,k,daysiny
 integer  :: msow,mcoldest,icoldest,nwarm,mcold,ntot,nvern,i,j,m
-integer  :: nydays,slen(12)
+integer  :: nydays,slen(12),nn1
 real(dp) :: fv,vdays,vegphu(12),repphu(12),totveg,wft,wfp,vrat
 real(dp) :: totphu(12),targ,totrep
 logical  :: dead
@@ -113,12 +113,12 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
   ! See Page 94 of van Bussel's thesis, section 2.2.1, eqns 5.1-5.3
   ! or page 249 of Waha et al 2012
   ! Calculates variation coefficient for temperature and precipitation
-  museas=sum(ssp%emnthtmp)/12.0d0+273.15
+  museas=sum(ssp%emnthtmp(:,nn1+1))/12.0d0+273.15
   seastmp=sqrt(1.0d0/11.0d0* &
-    sum((ssp%emnthtmp(:)+273.15-museas)*(ssp%emnthtmp(:)+273.15-museas)))/museas
-  museas=sum(ssp%emnthprc)/12.0d0
+    sum((ssp%emnthtmp(:,nn1+1)+273.15-museas)*(ssp%emnthtmp(:,nn1+1)+273.15-museas)))/museas
+  museas=sum(ssp%emnthprc(:,nn1+1))/12.0d0
   seasprc=sqrt(1.0d0/11.0d0* &
-  sum((ssp%emnthprc(:)-museas)*(ssp%emnthprc(:)-museas)))/museas
+  sum((ssp%emnthprc(:,nn1+1)-museas)*(ssp%emnthprc(:,nn1+1)-museas)))/museas
 
   ! Flag the seasonality type to use
   ssp%iseas=0
@@ -127,7 +127,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
   if (seastmp.gt.0.01d0.and.seasprc.gt.0.4d0) then
   ! Only use one seasonality type, depending on whether 
   ! minimum mean monthly temperature exceeds 10C
-    if (minval(ssp%emnthtmp).gt.10.0d0) then
+    if (minval(ssp%emnthtmp(:,nn1+1)).gt.10.0d0) then
       ! assume seasons controlled primarily by precipitation
       ssp%iseas=1
     else
@@ -152,20 +152,20 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
   enddo
   
   ! Recalculate sowday each year
-  pft_tab(1:nft)%sowday=0
+  pft_tab(1:nft)%sowday(nn1+1)=0
   
   ! Follow van Bussel (section 2.2.2) or Waha et al p 249 to find sowing day
   if (ssp%iseas.eq.1) then ! If sowing depends on precipitation
          
     ! Run four-month sums of precip/PET ratios 
     ! mnth is an output variable holding the first month of the wet season
-    call getwet(hrs,q,mnth,pet)
+    call getwet(hrs,q,mnth,pet,nn1)
       
     ! Find the first day of the first wet-season month which is wet enough
     ! All crops will be sown on the same day in this case
     do day=1,no_days(year,mnth,thty_dys)
-      if (pft_tab(3)%sowday.eq.0.and.prc(mnth,day).gt.0.1d0) &
-        pft_tab(3:nft)%sowday=day-1+mdoy(mnth)
+      if (pft_tab(3)%sowday(nn1+1).eq.0.and.prc(mnth,day).gt.0.1d0) &
+        pft_tab(3:nft)%sowday(nn1+1)=day-1+mdoy(mnth)
     enddo ! day=1,no_days(year,mnth,thty_dys)
     
   elseif (ssp%iseas.eq.2) then ! sowing depends on temperature
@@ -174,16 +174,16 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       ! Figures whether the crop will have a spring sow date
       ! According to the pft parameters this holds for all summer crops
       IF (pft_tab(ft)%sowthresh(2).GT.pft_tab(ft)%lethal(1)) THEN
-        pft_tab(ft)%sowday=summerday(pft_tab(ft)%sowthresh(2),mmid)
+        pft_tab(ft)%sowday(nn1+1)=summerday(pft_tab(ft)%sowthresh(2),mmid,nn1)
       ENDIF ! sowday,avtmp.ge.sumtsow
       ! Some crops have vernalization requirements; skip those that do not,
       ! usually crops have either summer or winter thresholds but not both
       ! (see van Bussel Table 5.1 on page 97, or Waha et al Table 1 page 250)
       IF (pft_tab(ft)%sowthresh(1).GE.pft_tab(ft)%lethal(2)) CYCLE 
-      IF (pft_tab(ft)%sowthresh(1).GT.maxval(ssp%emnthtmp)) THEN  
-        pft_tab(ft)%sowday=winterday(maxval(ssp%emnthtmp)-0.1,mmid)
+      IF (pft_tab(ft)%sowthresh(1).GT.maxval(ssp%emnthtmp(:,nn1+1))) THEN  
+        pft_tab(ft)%sowday(nn1+1)=winterday(maxval(ssp%emnthtmp(:,nn1+1))-0.1,mmid,nn1)
       ELSE
-        pft_tab(ft)%sowday=winterday(pft_tab(ft)%sowthresh(1),mmid)
+        pft_tab(ft)%sowday(nn1+1)=winterday(pft_tab(ft)%sowthresh(1),mmid,nn1)
       ENDIF
     ENDDO ! ft=1,nft
   ENDIF ! seasonality
@@ -193,13 +193,13 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
     if(pft_tab(ft)%phen.NE.3) cycle
 
     ! Aseasonal climate; just sow on new years day as per van Bussel 2011 p 95 
-    IF (pft_tab(ft)%sowday.EQ.0) pft_tab(ft)%sowday=1
+    IF (pft_tab(ft)%sowday(nn1+1).EQ.0) pft_tab(ft)%sowday(nn1+1)=1
 
     msow=1; mcoldest=1
     ! Get the sowing month and the coldest month
     DO mnth=1,12
-      IF (pft_tab(ft)%sowday.GE.mdoy(mnth)) msow=mnth
-      IF (ssp%emnthtmp(mnth).LT.ssp%emnthtmp(mcoldest)) mcoldest=mnth
+      IF (pft_tab(ft)%sowday(nn1+1).GE.mdoy(mnth)) msow=mnth
+      IF (ssp%emnthtmp(mnth,nn1+1).LT.ssp%emnthtmp(mcoldest,nn1+1)) mcoldest=mnth
     ENDDO ! mnth=1,12
     
     ! Get the midday of the coldest month
@@ -218,8 +218,8 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       !Calendar month
       mnth=msow+k
       IF (mnth.GT.12) mnth=mnth-12
-      dead=(ssp%emnthtmp(mnth).LE.pft_tab(ft)%lethal(1).OR. &
-        ssp%emnthtmp(mnth).GE.pft_tab(ft)%lethal(2))
+      dead=(ssp%emnthtmp(mnth,nn1+1).LE.pft_tab(ft)%lethal(1).OR. &
+        ssp%emnthtmp(mnth,nn1+1).GE.pft_tab(ft)%lethal(2))
       IF (dead) CYCLE
       ! After growing season over; no more PHU
       IF (mcold.GT.0) CYCLE
@@ -228,7 +228,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       ! wft is the fraction of the heat units allowed per day this month
       ! wfp is the fraction of the maximum photoperiod
       call wangengel(pft_tab(ft)%cardinal(1),pft_tab(ft)%cardinal(2), &
-        pft_tab(ft)%cardinal(3),ssp%emnthtmp(mnth),pft_tab(ft)%croptype(1), &
+        pft_tab(ft)%cardinal(3),ssp%emnthtmp(mnth,nn1+1),pft_tab(ft)%croptype(1), &
         pft_tab(ft)%photoperiod(1),pft_tab(ft)%photoperiod(2),hrs(mnth),wft,wfp)
 
       ! For crops that require vernalization.If the crop requires vernalization but
@@ -236,23 +236,23 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       if (fv.lt.0.95d0) then
         do i=1,no_days(year,mnth,thty_dys)
           j=j+1
-          if (j.lt.pft_tab(ft)%sowday) cycle
+          if (j.lt.pft_tab(ft)%sowday(nn1+1)) cycle
           if (fv.lt.0.95d0) call streck(pft_tab(ft)%cardinal(4), &
             pft_tab(ft)%cardinal(5),pft_tab(ft)%cardinal(6), &
-            ssp%emnthtmp(mnth),pft_tab(ft)%croptype(1),pft_tab(ft)%photoperiod(3), &
+            ssp%emnthtmp(mnth,nn1+1),pft_tab(ft)%croptype(1),pft_tab(ft)%photoperiod(3), &
             pft_tab(ft)%photoperiod(4),dayl(ssp%lat,j),vdays,fv)
-            totveg=totveg+ssp%emnthtmp(mnth)*fv*wft*wfp
+            totveg=totveg+ssp%emnthtmp(mnth,nn1+1)*fv*wft*wfp
             cycle
         enddo ! i=1,no_days(year,mnth,thty_dys)
         nvern=nvern+1
       else
         ! Vegetative growth PHU
-        totveg=totveg+ssp%emnthtmp(mnth)*no_days(year,mnth,thty_dys)*wft*wfp
+        totveg=totveg+ssp%emnthtmp(mnth,nn1+1)*no_days(year,mnth,thty_dys)*wft*wfp
         call wangengel(pft_tab(ft)%cardinal(7),pft_tab(ft)%cardinal(8), &
-          pft_tab(ft)%cardinal(9),ssp%emnthtmp(mnth),pft_tab(ft)%croptype(1), &
+          pft_tab(ft)%cardinal(9),ssp%emnthtmp(mnth,nn1+1),pft_tab(ft)%croptype(1), &
           pft_tab(ft)%photoperiod(5),pft_tab(ft)%photoperiod(6),hrs(mnth),wft,wfp)
         ! Reproductive PHU
-        repphu(mnth)=repphu(mnth)+ssp%emnthtmp(mnth)*no_days(year,mnth,thty_dys)*wft*wfp
+        repphu(mnth)=repphu(mnth)+ssp%emnthtmp(mnth,nn1+1)*no_days(year,mnth,thty_dys)*wft*wfp
       endif
 
       ! The cumulative vegetative heat units achieved this month
@@ -273,19 +273,19 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       IF (mcold.EQ.0) ntot=ntot+1
     ENDDO ! k=0,11
     
-    pft_tab(ft)%cropgdd(1)=pft_tab(ft)%croprange(1)
+    pft_tab(ft)%cropgdd(1,nn1+1)=pft_tab(ft)%croprange(1)
     IF (ssp%iseas.EQ.2) THEN ! Temperature controlled
       ! Here, I apply a squared cosine function to get the GDD rather than a
       ! quadratic as Bondeau et al (2007) did.  The cosine provides a smoothly
       ! varying function which can easily be shifted depending on when the coldest
       ! month occurs, avoiding any need for hardcoding time windows.
-      if (totveg.gt.pft_tab(ft)%cropgdd(1).and. &
+      if (totveg.gt.pft_tab(ft)%cropgdd(1,nn1+1).and. &
         pft_tab(ft)%croprange(1).lt.pft_tab(ft)%croprange(2)) then
         nydays=daysiny
-        pft_tab(ft)%cropgdd(1)=pft_tab(ft)%croprange(2)
-        pft_tab(ft)%cropgdd(2)=pft_tab(ft)%croprange(4)
-        vrat=pft_tab(ft)%sowday-icoldest
-        pft_tab(ft)%cropgdd(1)=pft_tab(ft)%croprange(1)+ &
+        pft_tab(ft)%cropgdd(1,nn1+1)=pft_tab(ft)%croprange(2)
+        pft_tab(ft)%cropgdd(2,nn1+1)=pft_tab(ft)%croprange(4)
+        vrat=pft_tab(ft)%sowday(nn1+1)-icoldest
+        pft_tab(ft)%cropgdd(1,nn1+1)=pft_tab(ft)%croprange(1)+ &
           (pft_tab(ft)%croprange(2)-pft_tab(ft)%croprange(1))* &
             (cos(vrat*3.14159d0/nydays)**2)
       endif ! (croprange(1,ft).lt.croprange(2,ft))
@@ -307,7 +307,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
       do k=nvern+1,ntot-1
         ! cropgdd(1,ft) is initialised to be croprange(1,ft) but may change
         ! croprange(1,ft) is the min GDD required
-        if (pft_tab(ft)%cropgdd(1).gt.pft_tab(ft)%croprange(1)) cycle
+        if (pft_tab(ft)%cropgdd(1,nn1+1).gt.pft_tab(ft)%croprange(1)) cycle
         ! Get the current calendar month, after vernalising
         mnth=msow+k
         if (mnth.gt.12) mnth=mnth-12
@@ -343,17 +343,17 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
         ! totphu test values that satisfy this criterion will be held in "i".
         if (totphu(mnth).le.pft_tab(ft)%croprange(2).and. &
           totphu(mnth).gt.pft_tab(ft)%croprange(1)) then
-          pft_tab(ft)%cropgdd(1)=totphu(mnth)
+          pft_tab(ft)%cropgdd(1,nn1+1)=totphu(mnth)
           totrep=totrep+totphu(mnth) !*4.0d0/(1+slen(mnth))
           if (slen(mnth).gt.0) i=i+1 !slen(mnth)+1
         elseif (totphu(mnth).gt.pft_tab(ft)%croprange(2)) then
-          pft_tab(ft)%cropgdd(1)=pft_tab(ft)%croprange(2)
+          pft_tab(ft)%cropgdd(1,nn1+1)=pft_tab(ft)%croprange(2)
         endif
       enddo ! k=0,11
 
       ! Get the final mean PHU for maturity, if there are several possibilities
  
-      if (i.gt.0) pft_tab(ft)%cropgdd(1)=totrep/i !*i/4.0d0
+      if (i.gt.0) pft_tab(ft)%cropgdd(1,nn1+1)=totrep/i !*i/4.0d0
     endif ! iseas.eq.2, controlled by temperature or otherwise
   enddo ! ft=3,nft
 
@@ -392,11 +392,11 @@ end subroutine seasonality
 !! @author LLT,EPK 
 !! @date Oct 2016
 !----------------------------------------------------------------------!
-subroutine getwet(hrs,q,wet,pet)
+subroutine getwet(hrs,q,wet,pet,nn1)
 !**********************************************************************!    
 implicit none
 real(dp) :: hrs(12),q(12),pet(12)
-integer  :: wet
+integer  :: wet,nn1
 
 real(dp) :: ht,windspeed,canga,t,rh,rn
 real(dp) :: svp,vpd,lam,rho,s,gam,ee,eemm,petsum(12)
@@ -411,8 +411,8 @@ integer :: m
 
   pet(:)=0
   DO m=1,12
-    IF (ssp%emnthprc(m).LE.0.0d0) CYCLE     
-    t=ssp%emnthtmp(m); rh=ssp%mnthhum(m);
+    IF (ssp%emnthprc(m,nn1+1).LE.0.0d0) CYCLE     
+    t=ssp%emnthtmp(m,nn1+1); rh=ssp%mnthhum(m);
     rn = 0.96d0*(q(m)*1000000.0d0/4.0d0 + 208.0d0 + 6.0d0*t)
     rn = rn*0.52d0
 
@@ -430,7 +430,7 @@ integer :: m
     ee = (s*rn + rho*1.012d0*canga*vpd)/(s + gam)
     eemm = (ee*3600.0d0*hrs(m))/(lam*1000.0d0)
 
-    pet(m)=ssp%emnthprc(m)/eemm !Ratio
+    pet(m)=ssp%emnthprc(m,nn1+1)/eemm !Ratio
 
   enddo ! m=1,12
 
@@ -473,25 +473,25 @@ end subroutine getwet
 !! @author LLT,EPK 
 !! @date Oct 2016
 !----------------------------------------------------------------------!
-integer function summerday(thresh,mmid)
+integer function summerday(thresh,mmid,nn1)
 !**********************************************************************!
 implicit none
 real(dp) :: thresh
 integer  :: mmid(12)
-integer  :: lasttmp,lastm,lastday,m,thistmp
+integer  :: lasttmp,lastm,lastday,m,thistmp,nn1
 
 
   summerday=1
   ! If all monthly temperatures below or above threshold,return
-  IF (minval(ssp%emnthtmp(:)).GE.thresh) RETURN
-  IF (maxval(ssp%emnthtmp(:)).LT.thresh) RETURN
+  IF (minval(ssp%emnthtmp(:,nn1+1)).GE.thresh) RETURN
+  IF (maxval(ssp%emnthtmp(:,nn1+1)).LT.thresh) RETURN
   lasttmp=0; lastm=12; lastday=-mmid(1)
-  IF (ssp%emnthtmp(12).GE.thresh) lasttmp=1
+  IF (ssp%emnthtmp(12,nn1+1).GE.thresh) lasttmp=1
   DO m=1,12
     thistmp=0
-    IF (ssp%emnthtmp(m).GE.thresh) thistmp=1
-    IF (thistmp.GT.lasttmp) summerday=int((thresh-ssp%emnthtmp(lastm))* &
-      (mmid(m)-lastday)/(ssp%emnthtmp(m)-ssp%emnthtmp(lastm)))+lastday
+    IF (ssp%emnthtmp(m,nn1+1).GE.thresh) thistmp=1
+    IF (thistmp.GT.lasttmp) summerday=int((thresh-ssp%emnthtmp(lastm,nn1+1))* &
+      (mmid(m)-lastday)/(ssp%emnthtmp(m,nn1+1)-ssp%emnthtmp(lastm,nn1+1)))+lastday
     lasttmp=thistmp; lastm=m; lastday=mmid(m)
   ENDDO
   IF (summerday.LE.0) summerday=mmid(12)-summerday
@@ -520,23 +520,23 @@ end function summerday
 !! @author LLT,EPK 
 !! @date Oct 2016
 !----------------------------------------------------------------------!
-integer function winterday(thresh,mmid)
+integer function winterday(thresh,mmid,nn1)
 !**********************************************************************!
 implicit none
 real(dp) :: thresh
 integer  :: mmid(12)
-integer  :: lasttmp,lastm,lastday,m,thistmp
+integer  :: lasttmp,lastm,lastday,m,thistmp,nn1
 
   winterday=1
-  if (minval(ssp%emnthtmp(:)).ge.thresh) return
-  if (maxval(ssp%emnthtmp(:)).lt.thresh) return
+  if (minval(ssp%emnthtmp(:,nn1+1)).ge.thresh) return
+  if (maxval(ssp%emnthtmp(:,nn1+1)).lt.thresh) return
   lasttmp=0; lastm=12; lastday=-mmid(1)
-  if (ssp%emnthtmp(12).le.thresh) lasttmp=1
+  if (ssp%emnthtmp(12,nn1+1).le.thresh) lasttmp=1
   do m=1,12
     thistmp=0
-    if (ssp%emnthtmp(m).le.thresh) thistmp=1
-    if (thistmp.gt.lasttmp) winterday=int((thresh-ssp%emnthtmp(lastm))* &
-      (mmid(m)-lastday)/(ssp%emnthtmp(m)-ssp%emnthtmp(lastm)))+lastday
+    if (ssp%emnthtmp(m,nn1+1).le.thresh) thistmp=1
+    if (thistmp.gt.lasttmp) winterday=int((thresh-ssp%emnthtmp(lastm,nn1+1))* &
+      (mmid(m)-lastday)/(ssp%emnthtmp(m,nn1+1)-ssp%emnthtmp(lastm,nn1+1)))+lastday
     lasttmp=thistmp; lastm=m; lastday=mmid(m)
   enddo
   if (winterday.le.0) winterday=mmid(12)-winterday
@@ -726,9 +726,9 @@ do ft=3,nft
     WRITE(500+coun,'(f7.3,f9.3)',advance='NO') ssp%lat,ssp%lon 
   case (3)
     coun=coun+1
-    WRITE(500+coun,'(i4)',advance='NO') pft_tab(ft)%sowday
+    WRITE(500+coun,'(i4)',advance='NO') pft_tab(ft)%sowday(1)
     coun=coun+1
-    WRITE(500+coun,'(i5)',advance='NO') pft_tab(ft)%cropgdd(1)
+    WRITE(500+coun,'(i5)',advance='NO') pft_tab(ft)%cropgdd(1,1)
     coun=coun+1
     WRITE(500+coun,'(i2)',advance='NO') ssp%iseas
     coun=coun+1
@@ -786,7 +786,7 @@ SUBROUTINE IRRIGATE(ft,sfc,sw)
   ! Return if its not crop phenology
   IF(pft(ft)%phen.NE.3) RETURN
   ! Return if not sown
-  !WRITE(*,*)ssp%day+(ssp%mnth-1)*30,pft(ft)%sowday,ssv(ft)%sown,ssv(ft)%harvest&
+  !WRITE(*,*)ssp%day+(ssp%mnth-1)*30,pft(ft)%sowday(1),ssv(ft)%sown,ssv(ft)%harvest&
   !  ,ssv(ft)%phu,ssv(ft)%lai%tot
   IF(ssv(ft)%sown.EQ.0) RETURN
 
@@ -807,6 +807,7 @@ SUBROUTINE IRRIGATE(ft,sfc,sw)
   sumn=0.
   DO i=1,SIZE(ll1)
     sumn=sumn+sw(ll1(i))+(1-EXP(pft(ft)%irrig(1)*fr_irr))*(sfc(ll1(i))-sw(ll1(i)))
+  !  sumn=(fr_irr**3)*sfc(ll1(i))
   ENDDO
   
   ! Decides irrigation
@@ -821,7 +822,8 @@ SUBROUTINE IRRIGATE(ft,sfc,sw)
   DO i=1,SIZE(ll2)
     ! This is the water I want in the soil layer after irrigation
     sumi=sw(ll2(i))+(1-EXP(pft(ft)%irrig(2)*fr_irr))*(sfc(ll2(i))-sw(ll2(i)))
-    ! If the water I want in greater than the water in the layer
+   ! sumi=(fr_irr**1.5)*sfc(ll2(i))
+   ! If the water I want in greater than the water in the layer
     IF(sumi.GT.ssv(ft)%soil_h2o(ll2(i))) THEN
       sumirr=sumi-ssv(ft)%soil_h2o(ll2(i))
       ssv(ft)%soil_h2o(ll2(i))=sumi
@@ -864,6 +866,8 @@ DO ft=3,nft
     ! Make sure optlai remains in the range specified by cropphen
     pft_tab(ft)%optlai=max(log10(pft_tab(ft)%fert(1))/log10(4.),0.0d0)+ &
       pft_tab(ft)%cropphen(1)
+    pft_tab(ft)%optlai=pft_tab(ft)%cropphen(1)+&
+      (pft_tab(ft)%cropphen(2)-pft_tab(ft)%cropphen(1))*(1-EXP(-0.007*pft_tab(ft)%fert(1)))
     pft_tab(ft)%optlai=min(pft_tab(ft)%cropphen(2),pft_tab(ft)%optlai)
   ENDIF
 ENDDO

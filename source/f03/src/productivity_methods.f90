@@ -117,7 +117,8 @@ if ((rlai>0.1).and.(q>0.0)) then
     nmult = soiln*tgp%p_nu4
     if (nmult>=1.0)  nmult = 1.0
   ELSE
-    nmult = soiln*tgp%p_nu4
+!    nmult = soiln*tgp%p_nu4
+    nmult=0.1+2*pft(ft)%fert(1)/300
   ENDIF
 
   ! All the lines that lead to the calculation of mmult are not

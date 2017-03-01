@@ -546,9 +546,12 @@ pft_tab(ft)%cropphen(6)=0.0
 pft_tab(ft)%irrig(1)=0.0
 pft_tab(ft)%irrig(2)=0.0
 pft_tab(ft)%irrig(3)=0.0
-pft_tab(ft)%sowday=0
-pft_tab(ft)%cropgdd(1)=0
-pft_tab(ft)%cropgdd(2)=0
+pft_tab(ft)%sowday(1)=0
+pft_tab(ft)%sowday(2)=0
+pft_tab(ft)%cropgdd(1,1)=0
+pft_tab(ft)%cropgdd(1,2)=0
+pft_tab(ft)%cropgdd(2,1)=0
+pft_tab(ft)%cropgdd(2,2)=0
 pft_tab(ft)%fert(1)=0.
 pft_tab(ft)%fert(2)=0.
 pft_tab(ft)%fert(3)=0.
@@ -615,9 +618,12 @@ pft_tab(ft)%cropphen(6)=0.0
 pft_tab(ft)%irrig(1)=0.0
 pft_tab(ft)%irrig(2)=0.0
 pft_tab(ft)%irrig(3)=0.0
-pft_tab(ft)%sowday=0
-pft_tab(ft)%cropgdd(1)=0
-pft_tab(ft)%cropgdd(2)=0
+pft_tab(ft)%sowday(1)=0
+pft_tab(ft)%sowday(2)=0
+pft_tab(ft)%cropgdd(1,1)=0
+pft_tab(ft)%cropgdd(1,2)=0
+pft_tab(ft)%cropgdd(2,1)=0
+pft_tab(ft)%cropgdd(2,2)=0
 pft_tab(ft)%fert(1)=0.
 pft_tab(ft)%fert(2)=0.
 pft_tab(ft)%fert(3)=0.
@@ -670,9 +676,9 @@ if (n_fields(st1)==1) then
         stop
       endif
 
-    if (n_fields(st1)/=69) then
+    if (n_fields(st1)/=72) then
       write(*,'('' PROGRAM TERMINATED'')')
-      write(*,*) 'The ft parameterisation must contain 69 fields.'
+      write(*,*) 'The ft parameterisation must contain 72 fields.'
       write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
       stop
     endif
@@ -697,9 +703,10 @@ if (n_fields(st1)==1) then
  pft_tab(ft)%croprange(4),pft_tab(ft)%cropphen(1),pft_tab(ft)%cropphen(2),&
  pft_tab(ft)%cropphen(3),pft_tab(ft)%cropphen(4),pft_tab(ft)%cropphen(5),&
  pft_tab(ft)%cropphen(6),pft_tab(ft)%irrig(1),pft_tab(ft)%irrig(2),&
- pft_tab(ft)%irrig(3),pft_tab(ft)%sowday,pft_tab(ft)%cropgdd(1),&
- pft_tab(ft)%cropgdd(2),pft_tab(ft)%fert(1),pft_tab(ft)%fert(2),&
- pft_tab(ft)%fert(3),pft_tab(ft)%optlai,pft_tab(ft)%harvindx
+ pft_tab(ft)%irrig(3),pft_tab(ft)%sowday(1),pft_tab(ft)%sowday(2),&
+ pft_tab(ft)%cropgdd(1,1),pft_tab(ft)%cropgdd(1,2),&
+ pft_tab(ft)%cropgdd(2,1),pft_tab(ft)%cropgdd(2,2),pft_tab(ft)%fert(1),&
+ pft_tab(ft)%fert(2),pft_tab(ft)%fert(3),pft_tab(ft)%optlai,pft_tab(ft)%harvindx
 
 
 
@@ -761,9 +768,9 @@ else
         stop
       endif
 
-      if (n_fields(st1)/=69) then
+      if (n_fields(st1)/=72) then
         write(*,'('' PROGRAM TERMINATED'')')
-        write(*,*) 'The ft parameterisation must contain 69 fields.'
+        write(*,*) 'The ft parameterisation must contain 72 fields.'
         write(*,'(1x,A,'' has '',i3)') st1(1:blank(st1)),n_fields(st1)
         stop
       endif
@@ -787,9 +794,10 @@ else
  pft_tab(ft)%croprange(4),pft_tab(ft)%cropphen(1),pft_tab(ft)%cropphen(2),&
  pft_tab(ft)%cropphen(3),pft_tab(ft)%cropphen(4),pft_tab(ft)%cropphen(5),&
  pft_tab(ft)%cropphen(6),pft_tab(ft)%irrig(1),pft_tab(ft)%irrig(2),&
- pft_tab(ft)%irrig(3),pft_tab(ft)%sowday,pft_tab(ft)%cropgdd(1),&
- pft_tab(ft)%cropgdd(2),pft_tab(ft)%fert(1),pft_tab(ft)%fert(2),&
- pft_tab(ft)%fert(3),pft_tab(ft)%optlai,pft_tab(ft)%harvindx
+ pft_tab(ft)%irrig(3),pft_tab(ft)%sowday(1),pft_tab(ft)%sowday(2),&
+ pft_tab(ft)%cropgdd(1,1),pft_tab(ft)%cropgdd(1,2),&
+ pft_tab(ft)%cropgdd(2,1),pft_tab(ft)%cropgdd(2,2),pft_tab(ft)%fert(1),&
+ pft_tab(ft)%fert(2),pft_tab(ft)%fert(3),pft_tab(ft)%optlai,pft_tab(ft)%harvindx
 
 
 

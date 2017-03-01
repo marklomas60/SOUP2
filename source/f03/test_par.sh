@@ -9,7 +9,7 @@ inputfile=$dir/test_two_crops_par.dat
 #Output final directory
 outputdir=$dir/test_two_crops_par
 #File with sites at resolution
-sites=/home/sm1epk/SDGVM/SDGVM_misc/SDGVM/data/sites/global_1deg.dat
+sites=/home/sm1epk/SDGVM/SDGVM_misc/SDGVM/data/sites/global_30min.dat
 
 #Make temporary output folder
 tmpdir=$dir/tempoutput
@@ -52,20 +52,20 @@ do
   prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
   while [ $prunning -ge $nprocesses ]
   do
-    sleep 10
+    sleep 5
     prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
   done
   echo submitting job $i
   qsub $tmpdir/batch-$i 1> $tmpdir/output-$i 2> $tmpdir/error-$i
-  sleep 10
+  sleep 5
 done 
 
 #Wait for final job to finish
-sleep 30
+sleep 10
 prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
 while [ $prunning -gt 0 ]
 do
-  sleep 30
+  sleep 10
   prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
 done  
 

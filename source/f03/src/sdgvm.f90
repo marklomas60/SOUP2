@@ -56,7 +56,7 @@ integer :: sites,cycle,yr0,yrf,snp_no,snpshts(1000),snp_year,day,d, &
  outyears,thty_dys,xlatresn,xlonresn,day_mnth,yearv(max_years),nyears,narg,seed1, &
  seed2,seed3,spinl,yr0s,yr0p,yrfp,xseed1,site_dat,site_out, &
  country_id,outyears1,outyears2,budo(max_cohorts),seno(max_cohorts), &
- sit_grd,xtmpv(500,12,31),xprcv(500,12,31),xhumv(500,12,31),xcldv(500,12),co
+ sit_grd,xtmpv(500,12,31),xprcv(500,12,31),xhumv(500,12,31),xcldv(500,12),co,nn1
 
 character(len=1000) :: st1
 character(len=1000) :: otags(100)
@@ -224,7 +224,7 @@ do site=1,sites
     
     do iyear=1,nyears
       year = yearv(iyear)
-
+ 
       ssp%iyear = iyear
       ssp%year = year
            
@@ -243,8 +243,11 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Set 'tmp' 'hum' 'prc' and 'cld', and calc monthly and yearly avs.    *
 !----------------------------------------------------------------------!
-      call SET_CLIMATE(xtmpv,xprcv,xhumv,xcldv,withcloudcover,yearv,iyear, &
- tmp,prc,hum,cld,thty_dys,yr0,year)
+      DO nn1=1,0,-1
+        call SET_CLIMATE(xtmpv,xprcv,xhumv,xcldv,withcloudcover,yearv,iyear, &
+          tmp,prc,hum,cld,thty_dys,yr0,year,nyears,nn1)
+        call SEASONALITY(tmp,prc,cld,thty_dys,nft,year,nn1)
+      ENDDO
       
       DO ft=1,nft
         !Irrigation in fraction of gridcell that is irrigated per crop
@@ -258,8 +261,6 @@ do site=1,sites
       ENDDO
       
       call FERT_CROPS(nft)  
-      
-      call SEASONALITY(tmp,prc,cld,thty_dys,nft,year)
 
 !----------------------------------------------------------------------!
 ! Set land use through ftprop.                                         !
@@ -273,7 +274,7 @@ do site=1,sites
       call MKDLIT()
 
       call RESTRICT_COHORT_NUMBERS()
-       
+      
 !----------------------------------------------------------------------!
 ! Initialisations that were in doly at the beginning of the year       !
 !----------------------------------------------------------------------!
@@ -287,7 +288,7 @@ do site=1,sites
 
         budo(ft) = 0
         seno(ft) = 0
-        
+          
 !----------------------------------------------------------------------!
 ! Height (m) ccn  ht(ft) = 0.807*(laimax(ft)**2.13655)                 !
 !----------------------------------------------------------------------!
@@ -359,7 +360,7 @@ do site=1,sites
             soilt = 0.97*soilt + 0.03*tmp(mnth,day)
             
             call IRRIGATE(ssp%cohort,sfc,sw) 
-            
+                                    
             call DOLYDAY(tmp(mnth,day),prc(mnth,day),hum(mnth,day),ca, &
      soilc(ft),soiln(ft),minn(ft),adp,sfc,sw,sswc,awl,kd,kx,daygpp,resp_l,lai(ft), &
      evap,tran,roff,interc,evbs,flow1(ft),flow2(ft),year,mnth,day,pet,ht(ft), &
@@ -376,11 +377,11 @@ do site=1,sites
             flow2(ft) = flow2(ft) + f3/10.0
             
             call PHENOLOGY(yield,laiinc)
-
-!         IF(ssp%year.EQ.2005.AND.pft(ft)%phen.EQ.3) THEN
-!           WRITE(*,*)mnth,day,ssv(ft)%sown,ssv(ft)%harvest,ssv(ft)%lai%tot,&
-!             pft(ft)%optlai,laiinc,pft(ft)%irrig(3),ssv(ft)%soil_h2o(2)
-!         ENDIF   
+          
+         !IF(ssp%year.EQ.2002.AND.pft(ft)%phen.EQ.3) THEN
+         !  WRITE(*,*)mnth,day,ssv(ft)%sown,ssv(ft)%harvest,ssv(ft)%lai%tot,&
+         !    pft(ft)%optlai,laiinc,pft(ft)%irrig(3),ssv(ft)%soil_h2o(2)
+         !ENDIF
 
             xx = ssv(ft)%nppstore(1)
             call ALLOCATION(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &
@@ -601,6 +602,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Write var in crop output file                                        !
 !----------------------------------------------------------------------!
+
     call CROP_OUTPUTS(stoutput,nft,3)
 
   endif

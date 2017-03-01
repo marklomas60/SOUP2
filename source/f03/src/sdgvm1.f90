@@ -161,14 +161,17 @@ end subroutine set_landuse
 !! @date Oct 2016
 !----------------------------------------------------------------------!
 subroutine set_climate(xtmpv,xprcv,xhumv,xcldv,withcloudcover,yearv,&
- iyear,tmp,prc,hum,cld,thty_dys,yr0,year)
+ iyear,tmp,prc,hum,cld,thty_dys,yr0,year,nyears,nn1)
 !**********************************************************************!
 integer,dimension(500,12,31) :: xtmpv,xprcv,xhumv
 integer,dimension(500,12) :: xcldv
-integer :: yearv(max_years),iyear,mnth,day,thty_dys,yr0,year
+integer :: yearv(max_years),iyear,mnth,day,thty_dys,yr0,year,nn1,nyears,nn2
 logical :: withcloudcover
 real(dp) :: tmp(12,31),prc(12,31),hum(12,31),cld(12)
 !----------------------------------------------------------------------!
+
+nn2=0
+IF(iyear.EQ.nyears.AND.nn1.EQ.1) nn2=-1
 
 ssp%mnthtmp(:)=0.
 ssp%mnthprc(:)=0.
@@ -176,13 +179,13 @@ ssp%mnthhum(:)=0.
 
 do mnth=1,12
   do day=1,no_days(year,mnth,thty_dys)
-    tmp(mnth,day) = real(xtmpv(yearv(iyear)-yr0+1,mnth,day))/100.0
-    prc(mnth,day) = real(xprcv(yearv(iyear)-yr0+1,mnth,day))/10.0
-    hum(mnth,day) = real(xhumv(yearv(iyear)-yr0+1,mnth,day))/100.0
-    ssp%mnthtmp(mnth)=ssp%mnthtmp(mnth)+tmp(mnth,day)/no_days(year,mnth,thty_dys)
-    ssp%mnthprc(mnth)=ssp%mnthprc(mnth)+prc(mnth,day)/no_days(year,mnth,thty_dys)
+    tmp(mnth,day) = real(xtmpv(yearv(iyear+nn1+nn2)-yr0+1,mnth,day))/100.0
+    prc(mnth,day) = real(xprcv(yearv(iyear+nn1+nn2)-yr0+1,mnth,day))/10.0
+    hum(mnth,day) = real(xhumv(yearv(iyear+nn1+nn2)-yr0+1,mnth,day))/100.0
+    ssp%mnthtmp(mnth)=ssp%mnthtmp(mnth)+tmp(mnth,day)/no_days(year+nn1+nn2,mnth,thty_dys)
+    ssp%mnthprc(mnth)=ssp%mnthprc(mnth)+prc(mnth,day)/no_days(year+nn1+nn2,mnth,thty_dys)
     if (withcloudcover) then
-      cld(mnth) = real(xcldv(yearv(iyear)-yr0+1,mnth))/1000.0
+      cld(mnth) = real(xcldv(yearv(iyear+nn1+nn2)-yr0+1,mnth))/1000.0
     else
       cld(mnth) = 0.5
     endif
@@ -190,22 +193,23 @@ do mnth=1,12
 enddo
 
 do mnth=1,12
-  do day=1,no_days(year,mnth,thty_dys)
+  do day=1,no_days(year+nn1+nn2,mnth,thty_dys)
     if (hum(mnth,day)<30.0)  hum(mnth,day) = 30.0
     if (hum(mnth,day)>95.0)  hum(mnth,day) = 95.0
-    ssp%mnthhum(mnth)=ssp%mnthhum(mnth)+hum(mnth,day)/no_days(year,mnth,thty_dys)
+    ssp%mnthhum(mnth)=ssp%mnthhum(mnth)+hum(mnth,day)/no_days(year+nn1+nn2,mnth,thty_dys)
   enddo
 enddo
 
-if(iyear.eq.1) then
-  ssp%emnthtmp(:)=ssp%mnthtmp(:)
-  ssp%emnthprc(:)=ssp%mnthprc(:)
-  ssp%emnthhum(:)=ssp%mnthhum(:)
-else
-  ssp%emnthtmp(:)=0.95*ssp%emnthtmp(:)+0.05*ssp%mnthtmp(:)
-  ssp%emnthprc(:)=0.95*ssp%emnthprc(:)+0.05*ssp%mnthprc(:)
-  ssp%emnthhum(:)=0.95*ssp%emnthhum(:)+0.05*ssp%mnthhum(:)
-endif
+IF(iyear.EQ.1) THEN
+  ssp%emnthtmp(:,nn1+1)=ssp%mnthtmp(:)
+  ssp%emnthprc(:,nn1+1)=ssp%mnthprc(:)
+  ssp%emnthhum(:,nn1+1)=ssp%mnthhum(:)
+ELSE
+  ssp%emnthtmp(:,nn1+1)=0.95*ssp%emnthtmp(:,nn1+1)+0.05*ssp%mnthtmp(:)
+  ssp%emnthprc(:,nn1+1)=0.95*ssp%emnthprc(:,nn1+1)+0.05*ssp%mnthprc(:)
+  ssp%emnthhum(:,nn1+1)=0.95*ssp%emnthhum(:,nn1+1)+0.05*ssp%mnthhum(:)
+ENDIF
+
 
 end subroutine set_climate
 

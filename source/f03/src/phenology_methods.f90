@@ -569,7 +569,7 @@ real(dp), parameter :: maxlai = 10.9
 
 real(dp) :: wtwp,wtfc,ftagh,stemfr,bb0,bbmax,bblim,sslim,lairat
 real(dp) :: rlai,soilw,soil2g,bbsum,maint,tsuma,laiinc,oldphen
-real(dp) :: dft,dfp,hrs,phen,oldopt,optinc,sssum,yield
+real(dp) :: dft,dfp,hrs,phen,oldopt,optinc,sssum,yield,gddmix(3)
 integer :: co,day,mnth,ftdth,bb,ss,bbgs,chill,dschill,leafls,bbm
 integer :: ssm,sss,i
 
@@ -611,8 +611,8 @@ integer :: ssm,sss,i
    ssv(co)%soil_h2o(3) + ssv(co)%soil_h2o(4)
   soil2g = soilw/(ssp%soil_depth*10.0)
 
-  ! Set ssv(co)%sown to 1 if we have sow day
-  IF((day + (mnth - 1)*30).EQ.pft(co)%sowday) THEN 
+  ! Set ssv(co)%sown to 1 if we have sow day.CHANGE THIS SOWDAY INDEX AND GDD
+  IF((day + (mnth - 1)*30).EQ.pft(co)%sowday(1)) THEN 
     ssv(co)%sown=1
     ssv(co)%harvest=0
   ENDIF
@@ -623,15 +623,16 @@ integer :: ssm,sss,i
     RETURN
   ENDIF
   
-  IF ((bb==0).AND.(soil2g>wtwp+0.25*(wtfc-wtwp))) THEN
+  IF (ssv(co)%sown.EQ.1.AND.(bb==0).AND.(soil2g>wtwp+0.25*(wtfc-wtwp))) THEN
     !----------------------------------------------------------------------!
     ! Check for budburst using degree days.                                !
     !----------------------------------------------------------------------!
+
     bbsum = 0.0
     DO i=1,bbm
       IF(ssp%tmem(i)>bb0)  bbsum = bbsum + MIN(bbmax,ssp%tmem(i)-bb0)
-    ENDDO
-
+    ENDDO 
+ 
     IF(REAL(bbsum).GE.REAL(bblim)) THEN
       !----------------------------------------------------------------------!
       ! Adjust proportion of gpp going into stem production based on suma.   !
@@ -670,7 +671,7 @@ integer :: ssm,sss,i
 
   ! Check for maturity using degree-days
   ! fv is the vernalisation function; fp is the photoperiod function
-  oldphen=ssv(co)%phu/pft(co)%cropgdd(1)! previous value
+  oldphen=ssv(co)%phu/pft(co)%cropgdd(1,1)! previous value
 
   hrs=dayl(ssp%lat,(mnth-1)*30+day)
   
@@ -680,18 +681,18 @@ integer :: ssm,sss,i
       CALL wangengel(pft(co)%cardinal(1),pft(co)%cardinal(2),pft(co)%cardinal(3) &
       ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(1),pft(co)%photoperiod(2) &
       ,hrs,dft,dfp)
-      pft(co)%cropgdd(2)=pft(co)%cardinal(1)
+      pft(co)%cropgdd(2,1)=pft(co)%cardinal(1)
     ELSEIF(oldphen.ge.pft(co)%cropphen(5)) THEN
       CALL wangengel(pft(co)%cardinal(7),pft(co)%cardinal(8),pft(co)%cardinal(9) &
       ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(5),pft(co)%photoperiod(6) &
       ,hrs,dft,dfp)
-      pft(co)%cropgdd(2)=pft(co)%cardinal(7)
+      pft(co)%cropgdd(2,1)=pft(co)%cardinal(7)
     ENDIF
     ssv(co)%phu=ssv(co)%phu+ssp%tmem(1)*dft*dfp
   ENDIF ! (bb.gt.0.and.oldphen.lt.1)
 
   ! Phenological index of maturity      
-  phen=ssv(co)%phu/pft(co)%cropgdd(1)
+  phen=ssv(co)%phu/pft(co)%cropgdd(1,1)
   
   ! If plants are mature (as determined by degree-days) harvest them 
   IF(phen.GE.1.AND.ssv(co)%harvest.EQ.0) THEN
@@ -714,20 +715,37 @@ integer :: ssm,sss,i
     ! Set LAI increase.                                                    !
     !----------------------------------------------------------------------!
     IF (ssv(co)%nppstore(1).GT.0.0d0) THEN
-      laiinc = lairat*(ssv(co)%nppstore(1) - 0.0*ssv(co)%nppstore(3))/msv%mv_leafmol/1.0/12.0*2.0
       ! Optimal LAI increase (Neisch et al 2002 SWAT documentation Eqns 18.1.9)
       ! cropphen(3) and (4) are the shape parameters after Neisch et al 2002
       oldopt=oldphen/(oldphen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*oldphen))
       optinc=(phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen)) &
         -oldopt)*pft(co)%optlai
-      IF(optinc*msv%mv_leafmol*12.0*2.0.LT.ssv(co)%nppstore(1)) laiinc=optinc !THIS LINE REVISE!!!
+      !IF(optinc*msv%mv_leafmol*12.0*1.25.LT.ssv(co)%nppstore(1)) THEN
+      IF(optinc*12.0/pft(co)%sla/18.0.LT.ssv(co)%nppstore(1)) THEN
+        laiinc=optinc
+      ELSE
+        gddmix(1)=oldphen*pft(co)%cropgdd(1,1)
+        gddmix(2)=phen*pft(co)%cropgdd(1,1)
+        gddmix(3)=gddmix(1) 
+        !DO WHILE (gddmix(3).LE.gddmix(2).AND.ssv(co)%nppstore(1).GE.laiinc*msv%mv_leafmol*1.25*12.0)
+        DO WHILE (gddmix(3).LE.gddmix(2).AND.ssv(co)%nppstore(1).GE.laiinc*12.0/pft(co)%sla/18.0) 
+          oldopt=oldphen/(oldphen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*oldphen))
+          phen=gddmix(3)/pft(co)%cropgdd(1,1) 
+          optinc=(phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen)) &
+            -oldopt)*pft(co)%optlai
+          laiinc=optinc
+          ssv(co)%phu=gddmix(3) 
+          gddmix(3)=gddmix(3)+1
+        ENDDO
+
+        !laiinc=ssv(co)%nppstore(1)/msv%mv_leafmol/12.0/1.25
+      ENDIF
       IF(rlai+laiinc>pft(co)%optlai) laiinc=pft(co)%optlai-rlai 
       IF((rlai>0).and.(ssv(co)%nppstore(1)<0.0)) laiinc = 0.0
     ELSE
       laiinc = 0.0
     ENDIF
   ENDIF ! crop is mature or optimal LAI attained
-
 
   !----------------------------------------------------------------------!
   ! Senescence, if rlai is greater than zero, compute senescence.        !
@@ -759,7 +777,7 @@ integer :: ssm,sss,i
       ENDIF
     ENDIF
   ENDIF
-  
+
 
   ssv(co)%stemfr      = stemfr
   ssv(co)%bb          = bb
