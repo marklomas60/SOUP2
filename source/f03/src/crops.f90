@@ -807,9 +807,9 @@ SUBROUTINE IRRIGATE(ft,sfc,sw)
   sumn=0.
   DO i=1,SIZE(ll1)
     sumn=sumn+sw(ll1(i))+(1-EXP(pft(ft)%irrig(1)*fr_irr))*(sfc(ll1(i))-sw(ll1(i)))
-  !  sumn=(fr_irr**3)*sfc(ll1(i))
+    !sumn=sumn+sw(ll1(i))+(0.6*fr_irr)*(sfc(ll1(i))-sw(ll1(i)))
   ENDDO
-  
+
   ! Decides irrigation
   IF(sumh.GT.sumn) RETURN
 
@@ -822,14 +822,14 @@ SUBROUTINE IRRIGATE(ft,sfc,sw)
   DO i=1,SIZE(ll2)
     ! This is the water I want in the soil layer after irrigation
     sumi=sw(ll2(i))+(1-EXP(pft(ft)%irrig(2)*fr_irr))*(sfc(ll2(i))-sw(ll2(i)))
-   ! sumi=(fr_irr**1.5)*sfc(ll2(i))
+    !sumi=sw(ll2(i))+(1*fr_irr)*(sfc(ll2(i))-sw(ll2(i)))
    ! If the water I want in greater than the water in the layer
     IF(sumi.GT.ssv(ft)%soil_h2o(ll2(i))) THEN
       sumirr=sumi-ssv(ft)%soil_h2o(ll2(i))
       ssv(ft)%soil_h2o(ll2(i))=sumi
     ENDIF
   ENDDO 
-
+  
 END SUBROUTINE IRRIGATE
 
 
@@ -1183,7 +1183,7 @@ DO i=1,yrf-yr0+1
       CALL bi_lin(xx,indx,xnorm,ynorm,ans)
       
       x = INT(ans+0.5)
-      
+          
       ftprop(classes(k)) = ans
       CLOSE(99)
 

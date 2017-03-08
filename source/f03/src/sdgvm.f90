@@ -378,10 +378,10 @@ do site=1,sites
             
             call PHENOLOGY(yield,laiinc)
           
-         !IF(ssp%year.EQ.2002.AND.pft(ft)%phen.EQ.3) THEN
-         !  WRITE(*,*)mnth,day,ssv(ft)%sown,ssv(ft)%harvest,ssv(ft)%lai%tot,&
-         !    pft(ft)%optlai,laiinc,pft(ft)%irrig(3),ssv(ft)%soil_h2o(2)
-         !ENDIF
+!         IF(ssp%year.EQ.2001.AND.pft(ft)%phen.EQ.3) THEN
+!           WRITE(*,*)mnth,day,ssv(ft)%sown,ssv(ft)%sowni,ssv(ft)%harvest,ssv(ft)%lai%tot,&
+!             pft(ft)%optlai,ssv(ft)%nppstore(1),laiinc,pft(ft)%irrig(3),ssv(ft)%soil_h2o(2)
+!         ENDIF
 
             xx = ssv(ft)%nppstore(1)
             call ALLOCATION(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &

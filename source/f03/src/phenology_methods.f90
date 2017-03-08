@@ -623,13 +623,19 @@ integer :: ssm,sss,i
     RETURN
   ENDIF
   
+  IF(ssv(co)%sown.EQ.1) THEN
+    ssv(co)%sowni=ssv(co)%sowni+1
+  ELSE
+    ssv(co)%sowni=0
+  ENDIF
+
   IF (ssv(co)%sown.EQ.1.AND.(bb==0).AND.(soil2g>wtwp+0.25*(wtfc-wtwp))) THEN
     !----------------------------------------------------------------------!
     ! Check for budburst using degree days.                                !
     !----------------------------------------------------------------------!
 
     bbsum = 0.0
-    DO i=1,bbm
+    DO i=1,ssv(co)%sowni+1
       IF(ssp%tmem(i)>bb0)  bbsum = bbsum + MIN(bbmax,ssp%tmem(i)-bb0)
     ENDDO 
  
@@ -638,13 +644,13 @@ integer :: ssm,sss,i
       ! Adjust proportion of gpp going into stem production based on suma.   !
       ! This is essentially the LAI control.                                 !
       !----------------------------------------------------------------------!
-      tsuma = ssv(co)%suma%tot
-      maint = max(1.0,(real(leafls)/360.0)*1.0)
-      tsuma = tsuma - msv%mv_leafmol*1.25/maint*tgp%p_opt
-      IF(tsuma>msv%mv_leafmol*1.25/maint*tgp%p_opt) tsuma = msv%mv_leafmol*1.25/maint*tgp%p_opt
-      IF(tsuma<-msv%mv_leafmol*1.25/maint*tgp%p_opt) tsuma = -msv%mv_leafmol*1.25/maint*tgp%p_opt
-      stemfr = stemfr + tsuma*tgp%p_laimem*12.0
-      IF(stemfr<120.0) stemfr = 120.0
+      !tsuma = ssv(co)%suma%tot
+      !maint = max(1.0,(real(leafls)/360.0)*1.0)
+      !tsuma = tsuma - msv%mv_leafmol*1.25/maint*tgp%p_opt
+      !IF(tsuma>msv%mv_leafmol*1.25/maint*tgp%p_opt) tsuma = msv%mv_leafmol*1.25/maint*tgp%p_opt
+      !IF(tsuma<-msv%mv_leafmol*1.25/maint*tgp%p_opt) tsuma = -msv%mv_leafmol*1.25/maint*tgp%p_opt
+      !stemfr = stemfr + tsuma*tgp%p_laimem*12.0
+      !IF(stemfr<120.0) stemfr = 120.0
 
       !----------------------------------------------------------------------!
       ! Budburst occurance.                                                  !
@@ -652,18 +658,18 @@ integer :: ssm,sss,i
       bb = (mnth-1)*30 + day
       bbgs = 0
     
-      IF(stemfr<0.8*ssv(co)%nppstore(1)) THEN
-        ssv(co)%nppstore(3) = ssv(co)%nppstore(1) - stemfr
-      ELSE
-        IF(stemfr<0.75*ssv(co)%nppstore(1)) THEN
-          ssv(co)%nppstore(3) = ssv(co)%nppstore(1) - stemfr
-        ELSE
-          ssv(co)%nppstore(3) = ssv(co)%nppstore(1)*0.25
-        ENDIF
-        stemfr = stemfr*0.8
-      ENDIF !(stemfr<0.8*ssv(co)%nppstore(1))
-      laiinc = (ssv(co)%nppstore(1) - 0.0*ssv(co)%nppstore(3))/msv%mv_leafmol/1.25/12.0
-      ssv(co)%nppstore(2) = ssv(co)%nppstore(1)
+      !IF(stemfr<0.8*ssv(co)%nppstore(1)) THEN
+      !  ssv(co)%nppstore(3) = ssv(co)%nppstore(1) - stemfr
+      !ELSE
+      !  IF(stemfr<0.75*ssv(co)%nppstore(1)) THEN
+      !    ssv(co)%nppstore(3) = ssv(co)%nppstore(1) - stemfr
+      !  ELSE
+      !    ssv(co)%nppstore(3) = ssv(co)%nppstore(1)*0.25
+      !  ENDIF
+      !  stemfr = stemfr*0.8
+      !ENDIF !(stemfr<0.8*ssv(co)%nppstore(1))
+      !laiinc = (ssv(co)%nppstore(1) - 0.0*ssv(co)%nppstore(3))/msv%mv_leafmol/1.25/12.0
+      !ssv(co)%nppstore(2) = ssv(co)%nppstore(1)
     ENDIF ! (REAL(bbsum).GE.REAL(bblim))
   ENDIF
 
@@ -693,6 +699,8 @@ integer :: ssm,sss,i
 
   ! Phenological index of maturity      
   phen=ssv(co)%phu/pft(co)%cropgdd(1,1)
+
+  IF(ssv(co)%sowni.GT.120) phen=1.
   
   ! If plants are mature (as determined by degree-days) harvest them 
   IF(phen.GE.1.AND.ssv(co)%harvest.EQ.0) THEN
@@ -704,6 +712,12 @@ integer :: ssm,sss,i
     ssv(co)%yield=pft(co)%harvindx* &
       (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
       ssv(co)%stem%tot + ssv(co)%bio(1))
+
+    ssv(co)%yield=(0.7*pft(co)%harvindx+0.3*pft(co)%harvindx*pft(co)%fert(1)/300)* &
+      (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
+      ssv(co)%stem%tot + ssv(co)%bio(1))
+    
+
   ELSEIF(phen.GE.pft(co)%cropphen(5)) THEN
     ! Senescence begins, start killing leaves based on PHU
     ! Here we follow Eqn 3 or 4 of Bondeau et al 2007
@@ -720,15 +734,28 @@ integer :: ssm,sss,i
       oldopt=oldphen/(oldphen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*oldphen))
       optinc=(phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen)) &
         -oldopt)*pft(co)%optlai
-      !IF(optinc*msv%mv_leafmol*12.0*1.25.LT.ssv(co)%nppstore(1)) THEN
-      IF(optinc*12.0/pft(co)%sla/18.0.LT.ssv(co)%nppstore(1)) THEN
+      IF(optinc*msv%mv_leafmol*12.0*1.25.LT.0.5*ssv(co)%nppstore(1)) THEN
+      !IF(optinc*12.0/pft(co)%sla/18.0.LT.0.5*ssv(co)%nppstore(1)) THEN
         laiinc=optinc
       ELSE
         gddmix(1)=oldphen*pft(co)%cropgdd(1,1)
         gddmix(2)=phen*pft(co)%cropgdd(1,1)
         gddmix(3)=gddmix(1) 
-        !DO WHILE (gddmix(3).LE.gddmix(2).AND.ssv(co)%nppstore(1).GE.laiinc*msv%mv_leafmol*1.25*12.0)
-        DO WHILE (gddmix(3).LE.gddmix(2).AND.ssv(co)%nppstore(1).GE.laiinc*12.0/pft(co)%sla/18.0) 
+
+        !IF(ssp%year.EQ.2001) THEN
+        !  WRITE(*,*)'A: ',mnth,day,oldphen,gddmix(3),phen,gddmix(2),&
+        !  optinc*msv%mv_leafmol*12.0*1.25,0.5*ssv(co)%nppstore(1)
+        !ENDIF
+
+        laiinc=0. 
+        DO WHILE (gddmix(3).LE.gddmix(2).AND.0.5*ssv(co)%nppstore(1).GE.laiinc*msv%mv_leafmol*1.25*12.0)
+        !DO WHILE (gddmix(3).LE.gddmix(2).AND.0.5*ssv(co)%nppstore(1).GE.laiinc*12.0/pft(co)%sla/18.0) 
+
+          !IF(ssp%year.EQ.2001) THEN
+          !  WRITE(*,*)'B: ',mnth,day,oldphen,gddmix(3),phen,gddmix(2),&
+          !    laiinc*msv%mv_leafmol*12.0*1.25,0.5*ssv(co)%nppstore(1)
+          !ENDIF
+
           oldopt=oldphen/(oldphen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*oldphen))
           phen=gddmix(3)/pft(co)%cropgdd(1,1) 
           optinc=(phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen)) &
@@ -737,8 +764,6 @@ integer :: ssm,sss,i
           ssv(co)%phu=gddmix(3) 
           gddmix(3)=gddmix(3)+1
         ENDDO
-
-        !laiinc=ssv(co)%nppstore(1)/msv%mv_leafmol/12.0/1.25
       ENDIF
       IF(rlai+laiinc>pft(co)%optlai) laiinc=pft(co)%optlai-rlai 
       IF((rlai>0).and.(ssv(co)%nppstore(1)<0.0)) laiinc = 0.0
