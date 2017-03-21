@@ -728,8 +728,7 @@ do i=1,yrf-yr0+1
       
       !This allows only maize
       IF (k.NE.29) ans=0.
-!      IF (k.EQ.29) ans=50.
-
+      
       classprop(classes(k)) = ans
       close(99)
 

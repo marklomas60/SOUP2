@@ -28,7 +28,7 @@ character(len=1000), parameter :: stver = 'VERSION current'
 real(dp) :: defaulttopsl
 parameter(defaulttopsl = 5.0)
 logical :: check_closure
-parameter(check_closure = .true.)
+parameter(check_closure = .false.)
 
 real(dp), dimension(max_cohorts) :: lai,evt,sresp,rof,gpp,ftprop,nppstoreold, &
  trn,lch,bioo,ht,soilc,soiln,minn,ftcov,covo,flow1,flow2, &
@@ -359,7 +359,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
             soilt = 0.97*soilt + 0.03*tmp(mnth,day)
             
-            call IRRIGATE(ssp%cohort,sfc,sw) 
+            !call IRRIGATE(ssp%cohort,sfc,sw) 
                                     
             call DOLYDAY(tmp(mnth,day),prc(mnth,day),hum(mnth,day),ca, &
      soilc(ft),soiln(ft),minn(ft),adp,sfc,sw,sswc,awl,kd,kx,daygpp,resp_l,lai(ft), &
@@ -378,17 +378,17 @@ do site=1,sites
             
             call PHENOLOGY(yield,laiinc)
           
-!         IF(ssp%year.EQ.2001.AND.pft(ft)%phen.EQ.3) THEN
-!           WRITE(*,*)mnth,day,ssv(ft)%sown,ssv(ft)%sowni,ssv(ft)%harvest,ssv(ft)%lai%tot,&
-!             pft(ft)%optlai,ssv(ft)%nppstore(1),laiinc,pft(ft)%irrig(3),ssv(ft)%soil_h2o(2)
-!         ENDIF
+         !IF(ssp%year.EQ.2001.AND.pft(ft)%phen.EQ.3) THEN
+         !  WRITE(*,*)mnth,day,ssv(ft)%sown,ssv(ft)%sowni,ssv(ft)%harvest,ssv(ft)%lai%tot,&
+         !    pft(ft)%optlai,ssv(ft)%nppstore(1),laiinc,pft(ft)%irrig(3),ssv(ft)%soil_h2o(2)
+         !ENDIF
 
             xx = ssv(ft)%nppstore(1)
             call ALLOCATION(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &
      leaflitter,stemnpp(ft),rootnpp(ft),resp_s,resp_r,resp_m,check_closure)
 
             ssv(ft)%slc = ssv(ft)%slc + leaflitter*ssv(ft)%cov
-
+              
             call SOIL_DYNAMICS2(pet,prc(mnth,day),tmp(mnth,day),f2/10.0,f3/10.0,nfix, &
      nci,sresp(ft),lch(ft),ca,site,year,yr0,yrf,speedc,ft,check_closure)
     

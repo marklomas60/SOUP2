@@ -135,7 +135,7 @@ end subroutine COVER
 subroutine INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)
 !***********************************************************************
 real(dp) :: ftprop(max_cohorts),sumc,sumftprop,total_carbon,old_total_carbon
-integer ft,nft,i,cohort
+integer ft,nft,i,cohort,ierase
 logical check_closure
 !----------------------------------------------------------------------*
 ! Check carbon closure.
@@ -156,6 +156,14 @@ cohort = ssp%cohorts
 
 do ft=1,nft
   if (ftprop(ft)>0.0) then
+  ierase=1
+  IF (pft_tab(ft)%phen.EQ.3.AND.ssp%co2ftmap(ft,1).EQ.1) THEN
+   IF (ssv(ssp%co2ftmap(ft,2))%sown.EQ.1) THEN
+     ierase=0
+     pft(ssp%co2ftmap(ft,2))=pft_tab(ft)
+   ENDIF
+  ENDIF
+  IF (ierase.EQ.1) THEN
     cohort = cohort + 1
     ssp%co2ftmap(ft,1) = ssp%co2ftmap(ft,1) + 1
     ssp%co2ftmap(ft,ssp%co2ftmap(ft,1)+1) = cohort
@@ -207,7 +215,7 @@ do ft=1,nft
       ssv(cohort)%slc = 0.0
     endif
 !----------------------------------------------------------------------*
-
+ENDIF
   endif
 enddo
 ssp%cohorts = cohort
@@ -1157,14 +1165,16 @@ do ft=1,max_pftps
 enddo
 
 do ft=1,ssp%cohorts
-  if (ssv(ft)%age > real(pft(ft)%mort)-0.1) then
-    call ACCUMULATE_DIST_SOIL_RES(ft,1.0_dp)
-  else
-!----------------------------------------------------------------------*
-! Age the state structure.                                             *
-!----------------------------------------------------------------------*
-    ssv(ft)%age = ssv(ft)%age + 1.0
-  endif
+  IF (ssv(ft)%sown.NE.1) THEN 
+    if (ssv(ft)%age > real(pft(ft)%mort)-0.1) then
+      call ACCUMULATE_DIST_SOIL_RES(ft,1.0_dp)
+    else
+    !----------------------------------------------------------------------*
+    ! Age the state structure.                                             *
+    !----------------------------------------------------------------------*
+      ssv(ft)%age = ssv(ft)%age + 1.0
+    endif
+  ENDIF
 enddo
 
 !----------------------------------------------------------------------*
@@ -1215,14 +1225,14 @@ do ft=1,ssp%cohorts
   endif
 !----------------------------------------------------------------------*
 !  IF (ssp%iyear == 1)  tmor = 1.0
-
+  
   if (ssv(ft)%age<real(fireres)) then
     fprob = xfprob
   else
     fprob = 0.0
   endif
   if (fireres<0) fprob = real(-fireres)/1000.0
-
+  IF (pft(ft)%phen.EQ.3) fprob=0.
   call ACCUMULATE_DIST_SOIL_RES(ft,tmor)
   call ACCUMULATE_BURNT_SOIL_RES(ft,fprob,firec)
 

@@ -569,7 +569,7 @@ real(dp), parameter :: maxlai = 10.9
 
 real(dp) :: wtwp,wtfc,ftagh,stemfr,bb0,bbmax,bblim,sslim,lairat
 real(dp) :: rlai,soilw,soil2g,bbsum,maint,tsuma,laiinc,oldphen
-real(dp) :: dft,dfp,hrs,phen,oldopt,optinc,sssum,yield,gddmix(3)
+real(dp) :: dft,dfp,hrs,phen,oldopt,optinc,sssum,yield,gddmix(3),hi
 integer :: co,day,mnth,ftdth,bb,ss,bbgs,chill,dschill,leafls,bbm
 integer :: ssm,sss,i
 
@@ -701,23 +701,24 @@ integer :: ssm,sss,i
   phen=ssv(co)%phu/pft(co)%cropgdd(1,1)
 
   IF(ssv(co)%sowni.GT.120) phen=1.
-  
+    
   ! If plants are mature (as determined by degree-days) harvest them 
   IF(phen.GE.1.AND.ssv(co)%harvest.EQ.0) THEN
     laiinc=-rlai
     ss=day + (mnth - 1)*30
     ssv(co)%harvest=1
     ssv(co)%sown=0
+    ssv(co)%bb=0
+    ssv(co)%sowni=0
     ! Adds up AGB to find yield at harvest
-    ssv(co)%yield=pft(co)%harvindx* &
+    !ssv(co)%yield=pft(co)%harvindx* &
+    !  (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
+    !  ssv(co)%stem%tot + ssv(co)%bio(1))
+    hi=0.7*pft(co)%harvindx+0.3*pft(co)%harvindx*pft(co)%fert(1)/300
+    hi=MIN(hi,pft(co)%harvindx)    
+    ssv(co)%yield=hi* &
       (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
       ssv(co)%stem%tot + ssv(co)%bio(1))
-
-    ssv(co)%yield=(0.7*pft(co)%harvindx+0.3*pft(co)%harvindx*pft(co)%fert(1)/300)* &
-      (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
-      ssv(co)%stem%tot + ssv(co)%bio(1))
-    
-
   ELSEIF(phen.GE.pft(co)%cropphen(5)) THEN
     ! Senescence begins, start killing leaves based on PHU
     ! Here we follow Eqn 3 or 4 of Bondeau et al 2007
@@ -833,7 +834,7 @@ subroutine allocation(laiinc,daygpp,resp_l,lmor_sc,resp,leaflit,&
 !**********************************************************************!
 real(dp) :: laiinc,leaflit,resp,ans,yy,stemnpp,total_carbon,old_total_carbon, &
  root_fixed,stem_fixed,lmor_sc(3600),daynpp,rootnpp,resp_s,resp_r,resp_l, &
- daygpp,resp_m
+ daygpp,resp_m,lit
 integer :: i,co,k
 logical :: check_closure
 real(dp) :: sumrr,sumsr,sumlr,summr
@@ -885,6 +886,12 @@ call LAI_ADD(laiinc,leaflit)
 ! leaf death not through age mortality 
 !----------------------------------------------------------------------!
 call LAI_DIST(lmor_sc,leaflit)
+
+lit=0.
+IF(pft(co)%phen.EQ.3.AND.ssv(co)%harvest.EQ.1.AND.ssv(co)%lai%tot.GT.0.) THEN
+  CALL HARV(lit)
+ENDIF
+leaflit=leaflit+lit
 
 !----------------------------------------------------------------------!
 ! Check carbon closure.

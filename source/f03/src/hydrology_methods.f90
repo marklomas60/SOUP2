@@ -313,7 +313,7 @@ ws = w(1) + w(2) + w(3) + w(4)
 ! If the transpiration is greater than the potential
 ! then it sets transpiration to potential.It also subtract
 ! what is transpired from potential.
-tran = 3*etmm
+tran = 2*etmm
 if (tran>pet2)  tran = pet2
 pet2 = pet2 - tran
 ! Removes water for each layer for transpiration in

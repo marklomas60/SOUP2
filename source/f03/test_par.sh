@@ -2,7 +2,7 @@
 #$ -l h_rt=16:59:59
 
 #How many qsubs
-nprocesses=98
+nprocesses=60
 dir=/data/sm1epk/SDGVM_runs
 #Input file for run.Several values should be set to ARGUMENT
 inputfile=$dir/test_two_crops_par.dat

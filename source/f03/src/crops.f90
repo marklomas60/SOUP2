@@ -1201,7 +1201,97 @@ ENDDO ! End of year loop
 
 END SUBROUTINE READ_IRRIGATION
 
+!**********************************************************************!
+!                                                                      !
+!                          harv :: crops                               !
+!                     ---------------------                            !
+!                                                                      !
+! subroutine harv(lit)                                                 !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Sends all carbon to litter on day of harvest
+!! @details
+!!
+!! @author EPK,ML
+!! @date Mar 2017
+!----------------------------------------------------------------------!
+SUBROUTINE HARV(lit)
+!**********************************************************************!
+IMPLICIT NONE
 
+REAL(dp) :: lit
+INTEGER :: co,i
+
+  co = ssp%cohort
+  ! Adds up the carbon pools that will send to litter
+  lit = 0.0
+
+  !----------------------------------------------------------------------!
+  ! Root harvest
+  !----------------------------------------------------------------------!
+
+  IF (ssv(co)%root%no > 0) THEN
+    DO i=1,ssv(co)%root%no
+      lit=lit+ssv(co)%root%c(i)%val
+      ssv(co)%root%c(i)%val = 0.0
+      ssv(co)%root%c(i)%age = 0.0
+    ENDDO
+    ssv(co)%root%no=0
+    ssv(co)%root%tot=0.0
+  ENDIF
+
+  !----------------------------------------------------------------------!
+  ! Stem harvest
+  !----------------------------------------------------------------------!
+
+  IF (ssv(co)%stem%no > 0) THEN
+    DO i=1,ssv(co)%stem%no
+      lit=lit+ssv(co)%stem%c(i)%val
+      ssv(co)%stem%c(i)%val = 0.0
+      ssv(co)%stem%c(i)%age = 0.0
+    ENDDO
+    ssv(co)%stem%no=0
+    ssv(co)%stem%tot=0.0
+  ENDIF
+
+  !----------------------------------------------------------------------!
+  ! LAI harvest
+  !----------------------------------------------------------------------!
+
+  IF (ssv(co)%lai%no > 0) THEN
+    DO i=1,ssv(co)%lai%no
+      lit=lit+ssv(co)%lai%c(i)%val*12.0/pft(co)%sla/18.0
+      ssv(co)%lai%c(i)%val = 0.0
+      ssv(co)%lai%c(i)%age = 0.0
+    ENDDO
+    ssv(co)%lai%no=0
+    ssv(co)%lai%tot=0.0
+  ENDIF
+
+  !----------------------------------------------------------------------!
+  ! nppstore(1) harvest
+  !----------------------------------------------------------------------!
+
+  lit=lit+ssv(co)%nppstore(1)
+  ssv(co)%nppstore(1)=0.
+  
+  !----------------------------------------------------------------------!
+  ! bio(1) & bio(2) harvest
+  !----------------------------------------------------------------------!
+  
+  lit=lit+ssv(co)%bio(1)+ssv(co)%bio(2)  
+  ssv(co)%bio(1)=0.
+  ssv(co)%bio(2)=0.
+
+  IF(lit>50) THEN
+    ssv(co)%nppstore(1)=50.
+    lit=lit-50
+  ELSE
+    ssv(co)%nppstore(1)=lit
+    lit=0.
+  ENDIF
+
+END SUBROUTINE harv
 
 end module crops
 
