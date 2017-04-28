@@ -29,7 +29,7 @@ type SiteParameters
   real(dp)                   :: wilt
   real(dp)                   :: field
   real(dp)                   :: sat
-  real(dp), dimension(200)   :: tmem
+  real(dp), dimension(300)   :: tmem
   real(dp), dimension(4)     :: new_soil_h2o
   real(dp)                   :: new_snow
   real(dp)                   :: new_l_snow

@@ -107,6 +107,7 @@ type SystemState
   integer                             :: chill
   integer                             :: dschill
   real(dp)                            :: phu
+  real(dp)                            :: vdays
 !----------------------------------------------------------------------*
   type(LaiComps)  :: lai
   type(StemComps) :: stem
@@ -114,7 +115,7 @@ type SystemState
   type(SumaComps) :: suma
 !----------------------------------------------------------------------*
   real(dp)                                :: yield
-  integer                                 :: harvest
+  integer, dimension(2)                   :: harvest
   integer                                 :: sown
   integer                                 :: sowni
 !----------------------------------------------------------------------*

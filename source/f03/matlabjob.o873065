@@ -1,0 +1,55 @@
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2016 The MathWorks, Inc.
+                   R2016a (9.0.0.341360) 64-bit (glnxa64)
+                             February 11, 2016
+
+ 
+To get started, type one of these: helpwin, helpdesk, or demo.
+For product information, visit www.mathworks.com.
+ 
+
+	Academic License
+
+>> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> >> 
+ans =
+
+     0
+
+>> rm -f bin/sdgvm.exe bin/sdgvm mod/*.mod obj/*.o src/*.obj
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/real_precision.o -c src/real_precision.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/dims.o -c src/dims.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/pft_parameters.o -c src/pft_parameters.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/system_state.o -c src/system_state.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/site_parameters.o -c src/site_parameters.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/tuning_parameters.o -c src/tuning_parameters.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/misc_parameters.o -c src/misc_parameters.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/misc_values.o -c src/misc_values.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/metdos.o -c src/metdos.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/func.o -c src/func.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/state_methods.o -c src/state_methods.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/open_files.o -c src/open_files.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/data.o -c src/data.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/weather_generator.o -c src/weather_generator.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/veg_dynamics.o -c src/veg_dynamics.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/sdgvm1.o -c src/sdgvm1.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/read_input.o -c src/read_input.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/hydrology_methods.o -c src/hydrology_methods.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/light_methods.o -c src/light_methods.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/crops.o -c src/crops.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/phenology_methods.o -c src/phenology_methods.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/sunshade.o -c src/sunshade.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/productivity_methods.o -c src/productivity_methods.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/doly.o -c src/doly.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/soil_methods.o -c src/soil_methods.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o obj/sdgvm.o -c src/sdgvm.f90 -Jmod
+gfortran -O3 -fbounds-check -fdefault-real-8 -o bin/sdgvm.exe \
+ obj/real_precision.o obj/dims.o obj/pft_parameters.o obj/system_state.o \
+ obj/site_parameters.o obj/tuning_parameters.o obj/misc_parameters.o \
+ obj/misc_values.o obj/metdos.o obj/func.o obj/state_methods.o \
+ obj/open_files.o obj/data.o obj/weather_generator.o obj/veg_dynamics.o \
+ obj/sdgvm1.o obj/read_input.o obj/hydrology_methods.o obj/light_methods.o \
+ obj/crops.o \
+ obj/phenology_methods.o obj/sunshade.o obj/productivity_methods.o \
+ obj/doly.o obj/soil_methods.o obj/sdgvm.o -Jmod
+>> >> >> >> >> >> >> >> >> >> >> >> 

@@ -569,7 +569,7 @@ real(dp), parameter :: maxlai = 10.9
 
 real(dp) :: wtwp,wtfc,ftagh,stemfr,bb0,bbmax,bblim,sslim,lairat
 real(dp) :: rlai,soilw,soil2g,bbsum,maint,tsuma,laiinc,oldphen
-real(dp) :: dft,dfp,hrs,phen,oldopt,optinc,sssum,yield,gddmix(3),hi
+real(dp) :: dft,dfp,hrs,phen,oldopt,optinc,sssum,yield,gddmix(3),hi,fv,vdays
 integer :: co,day,mnth,ftdth,bb,ss,bbgs,chill,dschill,leafls,bbm
 integer :: ssm,sss,i
 
@@ -614,12 +614,13 @@ integer :: ssm,sss,i
   ! Set ssv(co)%sown to 1 if we have sow day.CHANGE THIS SOWDAY INDEX AND GDD
   IF((day + (mnth - 1)*30).EQ.pft(co)%sowday(1)) THEN 
     ssv(co)%sown=1
-    ssv(co)%harvest=0
+    ssv(co)%harvest(1)=0
   ENDIF
 
   IF(ssv(co)%sown.EQ.0) THEN 
     ssv(co)%phu=0.
     laiinc=0.
+    ssv(co)%vdays=0;
     RETURN
   ENDIF
   
@@ -628,7 +629,8 @@ integer :: ssm,sss,i
   ELSE
     ssv(co)%sowni=0
   ENDIF
-
+  
+  
   IF (ssv(co)%sown.EQ.1.AND.(bb==0).AND.(soil2g>wtwp+0.25*(wtfc-wtwp))) THEN
     !----------------------------------------------------------------------!
     ! Check for budburst using degree days.                                !
@@ -680,10 +682,17 @@ integer :: ssm,sss,i
   oldphen=ssv(co)%phu/pft(co)%cropgdd(1,1)! previous value
 
   hrs=dayl(ssp%lat,(mnth-1)*30+day)
-  
+
+ 
   IF(bb.GT.0.AND.oldphen.LT.1) THEN
-    dft=0.0d0; dfp=0.0d0;
+    dft=0.0d0; dfp=0.0d0;fv=1.; 
     IF(oldphen.LT.pft(co)%cropphen(5)) THEN
+      IF(pft(co)%croptype(2).EQ.1) THEN
+        CALL streck(pft(co)%cardinal(4), &
+          pft(co)%cardinal(5),pft(co)%cardinal(6), &
+          ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(3), &
+          pft(co)%photoperiod(4),hrs,ssv(co)%vdays,fv)
+      ENDIF
       CALL wangengel(pft(co)%cardinal(1),pft(co)%cardinal(2),pft(co)%cardinal(3) &
       ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(1),pft(co)%photoperiod(2) &
       ,hrs,dft,dfp)
@@ -694,19 +703,20 @@ integer :: ssm,sss,i
       ,hrs,dft,dfp)
       pft(co)%cropgdd(2,1)=pft(co)%cardinal(7)
     ENDIF
-    ssv(co)%phu=ssv(co)%phu+ssp%tmem(1)*dft*dfp
+    ssv(co)%phu=ssv(co)%phu+ssp%tmem(1)*fv*dft*dfp
   ENDIF ! (bb.gt.0.and.oldphen.lt.1)
 
   ! Phenological index of maturity      
   phen=ssv(co)%phu/pft(co)%cropgdd(1,1)
 
-  IF(ssv(co)%sowni.GT.120) phen=1.
+  IF(ssv(co)%sowni.GT.280) phen=1.
     
   ! If plants are mature (as determined by degree-days) harvest them 
-  IF(phen.GE.1.AND.ssv(co)%harvest.EQ.0) THEN
+  IF(phen.GE.0.95.AND.ssv(co)%harvest(1).EQ.0) THEN
     laiinc=-rlai
     ss=day + (mnth - 1)*30
-    ssv(co)%harvest=1
+    ssv(co)%harvest(1)=1
+    ssv(co)%harvest(2)=day + (mnth - 1)*30
     ssv(co)%sown=0
     ssv(co)%bb=0
     ssv(co)%sowni=0
@@ -714,7 +724,7 @@ integer :: ssm,sss,i
     !ssv(co)%yield=pft(co)%harvindx* &
     !  (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
     !  ssv(co)%stem%tot + ssv(co)%bio(1))
-    hi=0.7*pft(co)%harvindx+0.3*pft(co)%harvindx*pft(co)%fert(1)/300
+    hi=0.7*pft(co)%harvindx+0.3*pft(co)%harvindx*pft(co)%fert(1)/pft(co)%fert(5)
     hi=MIN(hi,pft(co)%harvindx)    
     ssv(co)%yield=hi* &
       (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
@@ -888,7 +898,7 @@ call LAI_ADD(laiinc,leaflit)
 call LAI_DIST(lmor_sc,leaflit)
 
 lit=0.
-IF(pft(co)%phen.EQ.3.AND.ssv(co)%harvest.EQ.1.AND.ssv(co)%lai%tot.GT.0.) THEN
+IF(pft(co)%phen.EQ.3.AND.ssv(co)%harvest(1).EQ.1.AND.ssv(co)%lai%tot.GT.0.) THEN
   CALL HARV(lit)
 ENDIF
 leaflit=leaflit+lit

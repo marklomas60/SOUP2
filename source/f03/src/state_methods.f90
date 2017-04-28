@@ -504,7 +504,8 @@ enddo
 ssv(cohort)%suma%no = 0
 ssv(cohort)%suma%tot = 0.0
 
-ssv(cohort)%harvest = 0
+ssv(cohort)%harvest(1) = 0
+ssv(cohort)%harvest(2) = 0
 ssv(cohort)%sown = 0
 ssv(cohort)%sowni = 0
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-#$ -l h_rt=16:59:59
+#$ -l h_rt=06:59:59
 
 #How many qsubs
 nprocesses=60
@@ -61,11 +61,11 @@ do
 done 
 
 #Wait for final job to finish
-sleep 10
+sleep 120
 prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
 while [ $prunning -gt 0 ]
 do
-  sleep 10
+  sleep 120
   prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
 done  
 

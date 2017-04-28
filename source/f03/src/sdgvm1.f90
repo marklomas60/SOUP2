@@ -157,6 +157,10 @@ end subroutine set_landuse
 !! and humidity.It uses that info to calculate the exponentially-weighted
 !! 20-year monthly means which are assigned to site structure
 !! variable ssp.Those values are required for the crop processes.
+!! Note that here I want to calculate the 20-year monthly mean twice,one
+!! for this year and one for the next which is the reason why this sub
+!! is in a loop.Careful,the index nn1 that goes from the loop in the sub
+!! goes from 1 to 0. 
 !! @author Mark Lomas,EPK
 !! @date Oct 2016
 !----------------------------------------------------------------------!
@@ -170,6 +174,8 @@ logical :: withcloudcover
 real(dp) :: tmp(12,31),prc(12,31),hum(12,31),cld(12)
 !----------------------------------------------------------------------!
 
+!nn2 plays no role unless we are in the last year of the run where it
+!ensures that we wont be reading outside the array.
 nn2=0
 IF(iyear.EQ.nyears.AND.nn1.EQ.1) nn2=-1
 

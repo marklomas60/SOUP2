@@ -1,0 +1,55 @@
+#!/bin/bash
+#$ -l h_rt=12:59:59
+
+#Number of batches for optimization
+nopts=20
+#Crop type.1 for Maize,2 for Soybeans
+crop=1
+#Number of gridcells I will optimize in each batch
+npoints=10
+#Write the parameters in a file
+echo "$crop $nopts $npoints" > "/home/sm1epk/SDGVM/SOUP2/source/f03/nopts.dat"
+
+dir=/data/sm1epk/SDGVM_runs
+dir2=/home/sm1epk/SDGVM/SOUP2/source/f03
+module load compilers/gcc/5.2
+
+#Make temporary output folder
+tmpdir=$dir/tempoutputopt
+rm -fr $tmpdir
+mkdir -p $tmpdir
+
+#For each of the batches create folders
+for i in $(seq 1 $nopts)
+do
+
+  outd=$tmpdir/opt$i
+  mkdir $outd
+  
+  outd=$tmpdir/opt$i/res
+  mkdir $outd
+
+done
+
+cd $dir2
+runmatlab optim2.m -time 00:30:00 -mem 16G -nq
+
+#Wait until the optim2.m above finishes
+prunning=`Qstat | grep 'matlabjob'|grep 'sm1epk'| wc -l`
+while [ $prunning -ge 1 ]
+do
+  sleep 30
+  prunning=`Qstat | grep 'matlabjob'|grep 'sm1epk'| wc -l`
+done
+
+
+for i in $(seq 1 $nopts)
+do
+  sleep 5
+  cd $tmpdir/opt$i
+  runmatlab optim3.m -time 12:59:59 -nq
+  
+
+done
+
+

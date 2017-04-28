@@ -221,7 +221,7 @@ do site=1,sites
 ! Initialise the system state.                                         !
 !----------------------------------------------------------------------!
     call INITIALISE_STATE(initise,nft,cluse,xtmpv,soilt)
-    
+        
     do iyear=1,nyears
       year = yearv(iyear)
  
@@ -252,16 +252,17 @@ do site=1,sites
       DO ft=1,nft
         !Irrigation in fraction of gridcell that is irrigated per crop
         pft_tab(ft)%irrig(3)=0.01*cirr(ft,year-yr0+1)
-        !Nitrogen in kh/ha
+        !Nitrogen in kg/ha
         pft_tab(ft)%fert(1)=10*cfert(ft,year-yr0+1,1)
-        !Phosphorus in kh/ha
+        !Phosphorus in kg/ha
         pft_tab(ft)%fert(2)=10*cfert(ft,year-yr0+1,2)
-        !Potassium in kh/ha
+        !Potassium in kg/ha
         pft_tab(ft)%fert(3)=10*cfert(ft,year-yr0+1,3)
       ENDDO
       
       call FERT_CROPS(nft)  
 
+!      call READ_OPT_PAR()      
 !----------------------------------------------------------------------!
 ! Set land use through ftprop.                                         !
 !----------------------------------------------------------------------!
@@ -321,8 +322,8 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Updata daily temperature memory.                                     !
 !----------------------------------------------------------------------!
-          do i=1,199
-            ssp%tmem(201-i) = ssp%tmem(200-i)
+          do i=1,299
+            ssp%tmem(301-i) = ssp%tmem(300-i)
           enddo
           ssp%tmem(1) = tmp(mnth,day)
 
@@ -359,7 +360,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
             soilt = 0.97*soilt + 0.03*tmp(mnth,day)
             
-            !call IRRIGATE(ssp%cohort,sfc,sw) 
+            call IRRIGATE(ssp%cohort,sfc,sw) 
                                     
             call DOLYDAY(tmp(mnth,day),prc(mnth,day),hum(mnth,day),ca, &
      soilc(ft),soiln(ft),minn(ft),adp,sfc,sw,sswc,awl,kd,kx,daygpp,resp_l,lai(ft), &
@@ -382,7 +383,7 @@ do site=1,sites
          !  WRITE(*,*)mnth,day,ssv(ft)%sown,ssv(ft)%sowni,ssv(ft)%harvest,ssv(ft)%lai%tot,&
          !    pft(ft)%optlai,ssv(ft)%nppstore(1),laiinc,pft(ft)%irrig(3),ssv(ft)%soil_h2o(2)
          !ENDIF
-
+          
             xx = ssv(ft)%nppstore(1)
             call ALLOCATION(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &
      leaflitter,stemnpp(ft),rootnpp(ft),resp_s,resp_r,resp_m,check_closure)

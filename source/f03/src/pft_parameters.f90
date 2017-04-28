@@ -48,7 +48,7 @@ type PftParameters
   real(dp),dimension(3)  :: irrig
   integer,dimension(2)   :: sowday
   integer,dimension(2,2) :: cropgdd
-  real(dp),dimension(3)  :: fert
+  real(dp),dimension(6)  :: fert
   real(dp)               :: optlai
   real(dp)               :: harvindx
 end type

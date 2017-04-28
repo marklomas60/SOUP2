@@ -1,0 +1,4 @@
+#!/bin/bash
+#$ -l h_rt=00:30:00
+
+runmatlab erass.m -time 00:30:00
