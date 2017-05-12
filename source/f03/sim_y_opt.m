@@ -11,7 +11,7 @@ function f = sim_y_opt(x,str,crop,s,ind)
 
   eval(['cd ',s]);  
 
-  f=(1/0.45)*10/1000*a(:,end-7);
+  f=(1/0.45)*10/1000*mean(a(:,end-11:end-1));
   f=f(ind);
     
 end

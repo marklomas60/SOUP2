@@ -763,7 +763,7 @@ SUBROUTINE IRRIGATE(ft,sfc,sw)
   ! Return if its not crop phenology
   IF(pft(ft)%phen.NE.3) RETURN
   ! Return if not sown
-  !WRITE(*,*)ssp%day+(ssp%mnth-1)*30,pft(ft)%sowday(1),ssv(ft)%sown,ssv(ft)%harvest&
+  !WRITE(*,*)ssp%day+(ssp%mnth-1)*30,pft(ft)%sowday(3),ssv(ft)%sown,ssv(ft)%harvest&
   !  ,ssv(ft)%phu,ssv(ft)%lai%tot
   IF(ssv(ft)%sown.EQ.0) RETURN
 

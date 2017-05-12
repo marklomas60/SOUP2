@@ -568,16 +568,12 @@ subroutine phenology3(yield,laiinc)
 real(dp), parameter :: maxlai = 10.9
 
 real(dp) :: wtwp,wtfc,ftagh,stemfr,bb0,bbmax,bblim,sslim,lairat
-real(dp) :: rlai,soilw,soil2g,bbsum,maint,tsuma,laiinc,oldphen
-real(dp) :: dft,dfp,hrs,phen,oldopt,optinc,sssum,yield,gddmix(3),hi,fv,vdays
+real(dp) :: rlai,soilw,soil2g,bbsum,maint,tsuma,laiinc,oldphen,newopt
+real(dp) :: dft,dfp,hrs,phen,oldopt,optinc,sssum,yield,gddmix(3),hi,fv
 integer :: co,day,mnth,ftdth,bb,ss,bbgs,chill,dschill,leafls,bbm
 integer :: ssm,sss,i
 
-
-
 !----------------------------------------------------------------------!
-
-
 
   co = ssp%cohort
 
@@ -611,37 +607,60 @@ integer :: ssm,sss,i
    ssv(co)%soil_h2o(3) + ssv(co)%soil_h2o(4)
   soil2g = soilw/(ssp%soil_depth*10.0)
 
-  ! Set ssv(co)%sown to 1 if we have sow day.CHANGE THIS SOWDAY INDEX AND GDD
-  IF((day + (mnth - 1)*30).EQ.pft(co)%sowday(1)) THEN 
-    ssv(co)%sown=1
-    ssv(co)%harvest(1)=0
+  ! If it's the start of the year set yield to zero.We do this because yield is
+  ! cumulative added as in some years we might have two harvests
+  IF(mnth.EQ.1.AND.day.EQ.1) ssv(co)%yield=0.
+
+
+  IF(mnth.EQ.1.AND.day.EQ.1.AND.ssv(co)%sown.EQ.1) THEN
+      pft(co)%sowday(3)=pft(co)%sowday(2)
+      pft(co)%cropgdd(:,3)=pft(co)%cropgdd(:,2)
   ENDIF
 
-  IF(ssv(co)%sown.EQ.0) THEN 
-    ssv(co)%phu=0.
-    laiinc=0.
-    ssv(co)%vdays=0;
-    RETURN
+
+  IF(ssv(co)%sown.EQ.0) THEN
+      IF((day+ (mnth-1)*30).EQ.pft(co)%sowday(1)) THEN
+          ssv(co)%sown=1
+          ssv(co)%harvest(1)=0
+          pft(co)%sowday(3)=pft(co)%sowday(1)
+          pft(co)%cropgdd(:,3)=pft(co)%cropgdd(:,1)
+      ELSEIF((day+ (mnth-1)*30).EQ.pft(co)%sowday(2)) THEN
+          ssv(co)%sown=1
+          ssv(co)%harvest(1)=0
+          pft(co)%sowday(3)=pft(co)%sowday(2)
+          pft(co)%cropgdd(:,3)=pft(co)%cropgdd(:,2)          
+      ENDIF
   ENDIF
+
   
+  ! Add up days that the crop has been sowed,set to zero if not
   IF(ssv(co)%sown.EQ.1) THEN
-    ssv(co)%sowni=ssv(co)%sowni+1
+      ssv(co)%sowni=ssv(co)%sowni+1
   ELSE
-    ssv(co)%sowni=0
+      ssv(co)%sowni=0
+  ENDIF
+
+
+  ! If nothing is going to be sowed,return
+  IF(ssv(co)%sown.EQ.0) THEN 
+      ssv(co)%phu=0.
+      laiinc=0.
+      ssv(co)%vdays=0;
+      RETURN
   ENDIF
   
-  
+    
   IF (ssv(co)%sown.EQ.1.AND.(bb==0).AND.(soil2g>wtwp+0.25*(wtfc-wtwp))) THEN
-    !----------------------------------------------------------------------!
-    ! Check for budburst using degree days.                                !
-    !----------------------------------------------------------------------!
+      !----------------------------------------------------------------------!
+      ! Check for budburst using degree days.                                !
+      !----------------------------------------------------------------------!
 
-    bbsum = 0.0
-    DO i=1,ssv(co)%sowni+1
-      IF(ssp%tmem(i)>bb0)  bbsum = bbsum + MIN(bbmax,ssp%tmem(i)-bb0)
-    ENDDO 
+      bbsum = 0.0
+      DO i=1,ssv(co)%sowni+1
+          IF(ssp%tmem(i)>bb0)  bbsum = bbsum + MIN(bbmax,ssp%tmem(i)-bb0)
+      ENDDO 
  
-    IF(REAL(bbsum).GE.REAL(bblim)) THEN
+      IF(REAL(bbsum).GE.REAL(bblim)) THEN
       !----------------------------------------------------------------------!
       ! Adjust proportion of gpp going into stem production based on suma.   !
       ! This is essentially the LAI control.                                 !
@@ -657,8 +676,8 @@ integer :: ssm,sss,i
       !----------------------------------------------------------------------!
       ! Budburst occurance.                                                  !
       !----------------------------------------------------------------------!
-      bb = (mnth-1)*30 + day
-      bbgs = 0
+          bb = (mnth-1)*30 + day
+          bbgs = 0
     
       !IF(stemfr<0.8*ssv(co)%nppstore(1)) THEN
       !  ssv(co)%nppstore(3) = ssv(co)%nppstore(1) - stemfr
@@ -672,115 +691,129 @@ integer :: ssm,sss,i
       !ENDIF !(stemfr<0.8*ssv(co)%nppstore(1))
       !laiinc = (ssv(co)%nppstore(1) - 0.0*ssv(co)%nppstore(3))/msv%mv_leafmol/1.25/12.0
       !ssv(co)%nppstore(2) = ssv(co)%nppstore(1)
-    ENDIF ! (REAL(bbsum).GE.REAL(bblim))
+      ENDIF ! (REAL(bbsum).GE.REAL(bblim))
   ENDIF
 
   IF(bb>0)  bbgs = bbgs + 1
 
-  ! Check for maturity using degree-days
-  ! fv is the vernalisation function; fp is the photoperiod function
-  oldphen=ssv(co)%phu/pft(co)%cropgdd(1,1)! previous value
+  
+  ! Previous value of phenology
+  oldphen=ssv(co)%phu/pft(co)%cropgdd(1,3)
+
 
   hrs=dayl(ssp%lat,(mnth-1)*30+day)
 
- 
+  ! Calculates phen If we have budburst and phenology is less than 1
+  ! Checks whether we are in vegetative phase (LT crophen(5)), and if we 
+  ! require vernalization (croptype(2)).
+  ! It also checks if we are in maturity stage (GT crophen(5)).In all 3 cases
+  ! it calculates the phenological heat units by multiplying temperature by
+  ! fv,ft and fp which are the vernalization,development and photoperiod functions
   IF(bb.GT.0.AND.oldphen.LT.1) THEN
-    dft=0.0d0; dfp=0.0d0;fv=1.; 
-    IF(oldphen.LT.pft(co)%cropphen(5)) THEN
-      IF(pft(co)%croptype(2).EQ.1) THEN
-        CALL streck(pft(co)%cardinal(4), &
-          pft(co)%cardinal(5),pft(co)%cardinal(6), &
-          ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(3), &
-          pft(co)%photoperiod(4),hrs,ssv(co)%vdays,fv)
+      dft=0.0d0; dfp=0.0d0;fv=1.; 
+      IF(oldphen.LT.pft(co)%cropphen(5)) THEN
+          IF(pft(co)%croptype(2).EQ.1) THEN
+              CALL streck(pft(co)%cardinal(4), &
+                pft(co)%cardinal(5),pft(co)%cardinal(6), &
+                ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(3), &
+                pft(co)%photoperiod(4),hrs,ssv(co)%vdays,fv)
+          ENDIF
+          CALL wangengel(pft(co)%cardinal(1),pft(co)%cardinal(2),pft(co)%cardinal(3) &
+            ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(1),pft(co)%photoperiod(2) &
+            ,hrs,dft,dfp)
+          pft(co)%cropgdd(2,3)=pft(co)%cardinal(1)
+      ELSEIF(oldphen.ge.pft(co)%cropphen(5)) THEN
+          CALL wangengel(pft(co)%cardinal(7),pft(co)%cardinal(8),pft(co)%cardinal(9) &
+            ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(5),pft(co)%photoperiod(6) &
+            ,hrs,dft,dfp)
+          pft(co)%cropgdd(2,3)=pft(co)%cardinal(7)
       ENDIF
-      CALL wangengel(pft(co)%cardinal(1),pft(co)%cardinal(2),pft(co)%cardinal(3) &
-      ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(1),pft(co)%photoperiod(2) &
-      ,hrs,dft,dfp)
-      pft(co)%cropgdd(2,1)=pft(co)%cardinal(1)
-    ELSEIF(oldphen.ge.pft(co)%cropphen(5)) THEN
-      CALL wangengel(pft(co)%cardinal(7),pft(co)%cardinal(8),pft(co)%cardinal(9) &
-      ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(5),pft(co)%photoperiod(6) &
-      ,hrs,dft,dfp)
-      pft(co)%cropgdd(2,1)=pft(co)%cardinal(7)
-    ENDIF
-    ssv(co)%phu=ssv(co)%phu+ssp%tmem(1)*fv*dft*dfp
+      ssv(co)%phu=ssv(co)%phu+ssp%tmem(1)*fv*dft*dfp
   ENDIF ! (bb.gt.0.and.oldphen.lt.1)
 
-  ! Phenological index of maturity      
-  phen=ssv(co)%phu/pft(co)%cropgdd(1,1)
 
-  IF(ssv(co)%sowni.GT.280) phen=1.
+  ! Phenological index of maturity,PHU divided by the max PHU obtained from seasonality
+  ! for the specific crop and gridcell      
+  phen=ssv(co)%phu/pft(co)%cropgdd(1,3)
+
+  !IF(ssp%year.GE.1990) THEN
+  !  WRITE(*,*)ssp%year,mnth,day,phen,pft(co)%cropgdd(1,3)
+  !ENDIF
+
+  ! If the days that it is sowed exceeds a limit then set phen straight to 1
+  ! so it is harvested.For most crops the limit is set to 120 but for vern crops
+  ! it is set to 210 to allow a much bigger growing cycle
+  IF(ssv(co)%sowni.GT.pft(co)%limdharv) phen=1.
     
-  ! If plants are mature (as determined by degree-days) harvest them 
+  ! If plants are mature (as determined by degree-days) harvest them
+  ! Also checks that they are not already harvested 
   IF(phen.GE.0.95.AND.ssv(co)%harvest(1).EQ.0) THEN
-    laiinc=-rlai
-    ss=day + (mnth - 1)*30
-    ssv(co)%harvest(1)=1
-    ssv(co)%harvest(2)=day + (mnth - 1)*30
-    ssv(co)%sown=0
-    ssv(co)%bb=0
-    ssv(co)%sowni=0
-    ! Adds up AGB to find yield at harvest
-    !ssv(co)%yield=pft(co)%harvindx* &
-    !  (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
-    !  ssv(co)%stem%tot + ssv(co)%bio(1))
-    hi=0.7*pft(co)%harvindx+0.3*pft(co)%harvindx*pft(co)%fert(1)/pft(co)%fert(5)
-    hi=MIN(hi,pft(co)%harvindx)    
-    ssv(co)%yield=hi* &
-      (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
-      ssv(co)%stem%tot + ssv(co)%bio(1))
+      laiinc=-rlai
+      ss=day + (mnth - 1)*30
+      ssv(co)%harvest(1)=1
+      ssv(co)%harvest(2)=day + (mnth - 1)*30
+      ssv(co)%sown=0
+      ssv(co)%bb=0
+      ssv(co)%sowni=0
+      ! Adds up AGB to find yield at harvest
+      hi=0.7*pft(co)%harvindx+0.3*pft(co)%harvindx*pft(co)%fert(1)/pft(co)%fert(5)
+      hi=MIN(hi,pft(co)%harvindx)
+      ! Cumulative added as you might have 2 yields in a calendar year    
+      ssv(co)%yield=ssv(co)%yield+hi* &
+        (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
+        ssv(co)%stem%tot + ssv(co)%bio(1))
   ELSEIF(phen.GE.pft(co)%cropphen(5)) THEN
-    ! Senescence begins, start killing leaves based on PHU
-    ! Here we follow Eqn 3 or 4 of Bondeau et al 2007
-    laiinc=rlai*((1-phen)/(1.0d0-pft(co)%cropphen(5)))**pft(co)%cropphen(6) &
-      -rlai
+      ! Senescence begins, start killing leaves based on PHU
+      ! Here we follow Eqn 3 or 4 of Bondeau et al 2007
+      laiinc=rlai*((1-phen)/(1.0d0-pft(co)%cropphen(5)))**pft(co)%cropphen(6) &
+        -rlai
   ELSE 
-    !Leaves are still allowed to grow
-    !----------------------------------------------------------------------!
-    ! Set LAI increase.                                                    !
-    !----------------------------------------------------------------------!
-    IF (ssv(co)%nppstore(1).GT.0.0d0) THEN
-      ! Optimal LAI increase (Neisch et al 2002 SWAT documentation Eqns 18.1.9)
-      ! cropphen(3) and (4) are the shape parameters after Neisch et al 2002
-      oldopt=oldphen/(oldphen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*oldphen))
-      optinc=(phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen)) &
-        -oldopt)*pft(co)%optlai
-      IF(optinc*msv%mv_leafmol*12.0*1.25.LT.0.5*ssv(co)%nppstore(1)) THEN
-      !IF(optinc*12.0/pft(co)%sla/18.0.LT.0.5*ssv(co)%nppstore(1)) THEN
-        laiinc=optinc
-      ELSE
-        gddmix(1)=oldphen*pft(co)%cropgdd(1,1)
-        gddmix(2)=phen*pft(co)%cropgdd(1,1)
-        gddmix(3)=gddmix(1) 
-
-        !IF(ssp%year.EQ.2001) THEN
-        !  WRITE(*,*)'A: ',mnth,day,oldphen,gddmix(3),phen,gddmix(2),&
-        !  optinc*msv%mv_leafmol*12.0*1.25,0.5*ssv(co)%nppstore(1)
-        !ENDIF
-
-        laiinc=0. 
-        DO WHILE (gddmix(3).LE.gddmix(2).AND.0.5*ssv(co)%nppstore(1).GE.laiinc*msv%mv_leafmol*1.25*12.0)
-        !DO WHILE (gddmix(3).LE.gddmix(2).AND.0.5*ssv(co)%nppstore(1).GE.laiinc*12.0/pft(co)%sla/18.0) 
-
-          !IF(ssp%year.EQ.2001) THEN
-          !  WRITE(*,*)'B: ',mnth,day,oldphen,gddmix(3),phen,gddmix(2),&
-          !    laiinc*msv%mv_leafmol*12.0*1.25,0.5*ssv(co)%nppstore(1)
-          !ENDIF
-
+      !Leaves are still allowed to grow
+      !----------------------------------------------------------------------!
+      ! Set LAI increase.                                                    !
+      !----------------------------------------------------------------------!
+      IF (ssv(co)%nppstore(1).GT.0.0d0) THEN
+          ! Optimal LAI increase (Neisch et al 2002 SWAT documentation Eqns 18.1.9)
+          ! cropphen(3) and (4) are the shape parameters after Neisch et al 2002
           oldopt=oldphen/(oldphen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*oldphen))
-          phen=gddmix(3)/pft(co)%cropgdd(1,1) 
-          optinc=(phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen)) &
-            -oldopt)*pft(co)%optlai
-          laiinc=optinc
-          ssv(co)%phu=gddmix(3) 
-          gddmix(3)=gddmix(3)+1
-        ENDDO
+          newopt=phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen))
+          optinc=(newopt-oldopt)*pft(co)%optlai
+          IF(optinc*msv%mv_leafmol*12.0*1.25.LT.0.5*ssv(co)%nppstore(1)) THEN
+          !IF(optinc*12.0/pft(co)%sla/18.0.LT.0.5*ssv(co)%nppstore(1)) THEN
+              laiinc=optinc
+          ELSE
+              gddmix(1)=oldphen*pft(co)%cropgdd(1,3)
+              gddmix(2)=phen*pft(co)%cropgdd(1,3)
+              gddmix(3)=gddmix(1) 
+
+              !IF(ssp%year.EQ.2001) THEN
+              !  WRITE(*,*)'A: ',mnth,day,oldphen,gddmix(3),phen,gddmix(2),&
+              !  optinc*msv%mv_leafmol*12.0*1.25,0.5*ssv(co)%nppstore(1)
+              !ENDIF
+
+              laiinc=0. 
+              DO WHILE (gddmix(3).LE.gddmix(2).AND.0.5*ssv(co)%nppstore(1).GE.laiinc*msv%mv_leafmol*1.25*12.0)
+              !DO WHILE (gddmix(3).LE.gddmix(2).AND.0.5*ssv(co)%nppstore(1).GE.laiinc*12.0/pft(co)%sla/18.0) 
+
+                  !IF(ssp%year.EQ.2001) THEN
+                  !  WRITE(*,*)'B: ',mnth,day,oldphen,gddmix(3),phen,gddmix(2),&
+                  !    laiinc*msv%mv_leafmol*12.0*1.25,0.5*ssv(co)%nppstore(1)
+                  !ENDIF
+
+                  oldopt=oldphen/(oldphen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*oldphen))
+                  phen=gddmix(3)/pft(co)%cropgdd(1,3)
+                  newopt=phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen))
+                  optinc=(newopt-oldopt)*pft(co)%optlai 
+                  laiinc=optinc
+                  ssv(co)%phu=gddmix(3) 
+                  gddmix(3)=gddmix(3)+1
+              ENDDO
+          ENDIF
+          IF(rlai+laiinc>pft(co)%optlai) laiinc=pft(co)%optlai-rlai 
+          IF((rlai>0).and.(ssv(co)%nppstore(1)<0.0)) laiinc = 0.0
+      ELSE
+          laiinc = 0.0
       ENDIF
-      IF(rlai+laiinc>pft(co)%optlai) laiinc=pft(co)%optlai-rlai 
-      IF((rlai>0).and.(ssv(co)%nppstore(1)<0.0)) laiinc = 0.0
-    ELSE
-      laiinc = 0.0
-    ENDIF
   ENDIF ! crop is mature or optimal LAI attained
 
   !----------------------------------------------------------------------!
@@ -1079,15 +1112,6 @@ if (ssv(co)%suma%no > 0) then
   endif
 endif
 
-! Checks if laiinc>0 which is the net assimilation calculated as suma
-! in doly.For each cohort there will be carbon compartments where this
-! carbon is stored.These compartments can be found in ssv(co)%suma where
-! ssv(co)%suma%no is the number of the compartment,
-! ssv(co)%suma%c(ssv(co)%suma%no)%age the julian day when the compartment
-! was created and ssv(co)%suma%c(ssv(co)%suma%no)%val the carbon
-! in that compartment.Carbon keeps getting added to each compartment
-! until it reaces a certain age in which case a new compartment is created
-! and carbon starts being stored there.
 !----------------------------------------------------------------------!
 ! Add on lai increase, create new compartment if necessary.
 !----------------------------------------------------------------------!
@@ -1159,6 +1183,7 @@ if (ssv(co)%stem%no > 0) then
   endif
 endif
 
+! Check lai_add for comments
 !----------------------------------------------------------------------!
 ! Add on stem increase, create new compartment if necessary.
 !----------------------------------------------------------------------!
@@ -1226,6 +1251,7 @@ if (ssv(co)%root%no > 0) then
   endif
 endif
 
+! Check lai_add for comments
 !----------------------------------------------------------------------!
 ! Add on lai increase, create new compartment if necessary.
 !----------------------------------------------------------------------!
@@ -1260,8 +1286,8 @@ end subroutine root_add
 !----------------------------------------------------------------------!
 !> @brief
 !! @details
-!! @author Mark Lomas
-!! @date Feb 2006
+!! @author Mark Lomas,EPK
+!! @date May,2017
 !----------------------------------------------------------------------!
 subroutine lai_add(laiinc,leaflit)
 !**********************************************************************!
@@ -1270,6 +1296,24 @@ integer :: i,co,k
 !----------------------------------------------------------------------!
 
 co = ssp%cohort
+
+! For each cohort there will be carbon compartments where the leaf
+! carbon is stored,several for the whole canopy.
+! These compartments can be found in ssv(co)%lai where
+! ssv(co)%lai%no is the number of available compartments,
+! ssv(co)%lai%c(ssv(co)%lai%no)%age the julian day when the compartment
+! was created and ssv(co)%lai%c(ssv(co)%lai%no)%val the carbon
+! in that compartment.
+! For old age it checks if the age of the first compartment which will always
+! be the older one is greater than the leaf life span lls,usually 180 days.
+! If that applies then the compartment will begin to senence which doesnt
+! happen immidiately but takes  lai_comp_length days,set to 10.
+! k is a countdown from lai_comp_length to 1 days, immidiately after the
+! leaf reached its life span. For each day afterwards a fraction of its
+! carbon will be sent to the litter and the remainder will stay in the leaf.
+! The process will continue until k==1 where the carbon compartment will die
+! ,the remainding carbon goes to litter and all other compartments
+! indexes move down by 1 index.Index 1 is always the oldest that dies first.
 
 !----------------------------------------------------------------------!
 ! Leaf death through old age.
@@ -1293,6 +1337,11 @@ if (ssv(co)%lai%no > 0) then
   endif
 endif
 
+! Checks if laiinc>0 which is the carbon allocated to go to the canopy
+! Carbon keeps getting added to each compartment
+! until it reaces a certain age in which case a new compartment is created
+! and carbon starts being stored there.If there isn't any compartment,
+! one is created.
 !----------------------------------------------------------------------!
 ! Add on lai increase, create new compartment if necessary.
 !----------------------------------------------------------------------!

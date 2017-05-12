@@ -119,7 +119,7 @@ for i=1:nopts
   system(['./sdgvm.exe ./test_two_crops_opt_r_',num2str(i),'.dat /data/sm1epk/SDGVM_runs/tempoutputopt/opt',num2str(i),'/res']);        
   eval(['cd ',dirr{2},num2str(i),'/res']);
   a=dlmread([str{1,crop},'ryield.dat']);
-  sim(:,1)=(1/0.45)*10/1000*a(:,end-7);
+  sim(:,1)=(1/0.45)*10/1000*mean(a(:,end-11:end-1));
 
 
   %Does run with MAP values obtained from this batch
@@ -129,7 +129,7 @@ for i=1:nopts
   system(['./sdgvm.exe ./test_two_crops_opt_r_',num2str(i),'.dat /data/sm1epk/SDGVM_runs/tempoutputopt/opt',num2str(i),'/res']);        
   eval(['cd ',dirr{2},num2str(i),'/res']);
   a=dlmread([str{1,crop},'ryield.dat']);
-  sim(:,2)=(1/0.45)*10/1000*a(:,end-7);
+  sim(:,2)=(1/0.45)*10/1000*mean(a(:,end-11:end-1));
 
   %Does run with MAP values obtained from all batches together
   or=[ma_all(1);ma_all(2)];
@@ -138,7 +138,7 @@ for i=1:nopts
   system(['./sdgvm.exe ./test_two_crops_opt_r_',num2str(i),'.dat /data/sm1epk/SDGVM_runs/tempoutputopt/opt',num2str(i),'/res']);        
   eval(['cd ',dirr{2},num2str(i),'/res']);
   a=dlmread([str{1,crop},'ryield.dat']);
-  sim(:,3)=(1/0.45)*10/1000*a(:,end-7);
+  sim(:,3)=(1/0.45)*10/1000*mean(a(:,end-11:end-1));
 
 
   sim_all=[sim_all;sim];

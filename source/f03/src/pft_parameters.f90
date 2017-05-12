@@ -46,11 +46,12 @@ type PftParameters
   real(dp),dimension(4)  :: croprange
   real(dp),dimension(6)  :: cropphen
   real(dp),dimension(3)  :: irrig
-  integer,dimension(2)   :: sowday
-  integer,dimension(2,2) :: cropgdd
+  integer,dimension(3)   :: sowday
+  integer,dimension(2,3) :: cropgdd
   real(dp),dimension(6)  :: fert
   real(dp)               :: optlai
   real(dp)               :: harvindx
+  integer                :: limdharv
 end type
 
 type (PftParameters) :: pft(max_cohorts), pft_tab(max_pftps)

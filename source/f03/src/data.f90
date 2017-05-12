@@ -727,7 +727,7 @@ do i=1,yrf-yr0+1
       x = int(ans+0.5)
       
       !This allows only specific crops
-      IF (k.NE.33) ans=0.
+      IF (k.NE.29) ans=0.
       
       classprop(classes(k)) = ans
       close(99)

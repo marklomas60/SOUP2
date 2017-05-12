@@ -1232,8 +1232,11 @@ do ft=1,ssp%cohorts
     fprob = 0.0
   endif
   if (fireres<0) fprob = real(-fireres)/1000.0
-  IF (pft(ft)%phen.EQ.3) fprob=0.
+
   call ACCUMULATE_DIST_SOIL_RES(ft,tmor)
+  
+  ! No fire for crop phenology  
+  IF (pft(ft)%phen.EQ.3) fprob=0.
   call ACCUMULATE_BURNT_SOIL_RES(ft,fprob,firec)
 
 enddo

@@ -29,7 +29,7 @@ system(['./sdgvm.exe ./test_two_crops_opt_r_',s(42:end),'.dat /data/sm1epk/SDGVM
 %Goes into the folder that holds the runs for the batch and reads yield for the specific crop  
 eval(['cd ',s,'/res']);
 a=dlmread([str{1,crop},'ryield.dat']);
-sim=(1/0.45)*10/1000*a(:,end-7);
+sim=(1/0.45)*10/1000*mean(a(:,end-11:end-1));
 
 %Finds the indexes where both simulated and data yields are >0.Only these will
 %be used for the optimization

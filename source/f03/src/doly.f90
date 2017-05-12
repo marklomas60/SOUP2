@@ -292,7 +292,7 @@ else
   suma = 0.0
 endif
 
-call SUMA_ADD(suma)
+call suma_add(suma)
 
 ! These pets have no place here and can be removed
 dp2 = prc
