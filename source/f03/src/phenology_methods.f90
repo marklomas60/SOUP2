@@ -128,7 +128,7 @@ bb2bbmin = 285
 bb2bbmax = 390
 gs = 60
 
-rlai = ssv(co)%lai%tot
+rlai = ssv(co)%lai%tot(1)
 
 yield = 0.0
 harvest = 0
@@ -356,7 +356,7 @@ bb2bbmin = 315
 bb2bbmax = 375
 gs = 30
 
-rlai = ssv(co)%lai%tot
+rlai = ssv(co)%lai%tot(1)
 
 yield = 0.0
 
@@ -598,7 +598,7 @@ integer :: ssm,sss,i
   sslim    = pft(co)%senlim
   lairat   = pft(co)%lrat
 
-  rlai = ssv(co)%lai%tot
+  rlai = ssv(co)%lai%tot(1)
   
   yield = 0.0
   ss=0;
@@ -736,8 +736,8 @@ integer :: ssm,sss,i
   ! for the specific crop and gridcell      
   phen=ssv(co)%phu/pft(co)%cropgdd(1,3)
 
-  !IF(ssp%year.GE.1990) THEN
-  !  WRITE(*,*)ssp%year,mnth,day,phen,pft(co)%cropgdd(1,3)
+  !IF(ssp%year.EQ.1991) THEN
+  !  WRITE(*,*)ssp%year,mnth,day,phen,rlai
   !ENDIF
 
   ! If the days that it is sowed exceeds a limit then set phen straight to 1
@@ -746,27 +746,25 @@ integer :: ssm,sss,i
   IF(ssv(co)%sowni.GT.pft(co)%limdharv) phen=1.
     
   ! If plants are mature (as determined by degree-days) harvest them
-  ! Also checks that they are not already harvested 
+  ! Just check the flags,harvest will happen in allocation sub 
   IF(phen.GE.0.95.AND.ssv(co)%harvest(1).EQ.0) THEN
-      laiinc=-rlai
       ss=day + (mnth - 1)*30
       ssv(co)%harvest(1)=1
       ssv(co)%harvest(2)=day + (mnth - 1)*30
       ssv(co)%sown=0
       ssv(co)%bb=0
       ssv(co)%sowni=0
-      ! Adds up AGB to find yield at harvest
-      hi=0.7*pft(co)%harvindx+0.3*pft(co)%harvindx*pft(co)%fert(1)/pft(co)%fert(5)
-      hi=MIN(hi,pft(co)%harvindx)
-      ! Cumulative added as you might have 2 yields in a calendar year    
-      ssv(co)%yield=ssv(co)%yield+hi* &
-        (ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
-        ssv(co)%stem%tot + ssv(co)%bio(1))
   ELSEIF(phen.GE.pft(co)%cropphen(5)) THEN
       ! Senescence begins, start killing leaves based on PHU
       ! Here we follow Eqn 3 or 4 of Bondeau et al 2007
-      laiinc=rlai*((1-phen)/(1.0d0-pft(co)%cropphen(5)))**pft(co)%cropphen(6) &
-        -rlai
+      
+      !laiinc=((((1.-phen)/(1.-pft(co)%cropphen(5)))**pft(co)%cropphen(6))* &
+      !  (1-0.9)+0.9)*pft(co)%optlai
+
+      ! Placeholder.Removes 1% of the current LAI for senescence every day after
+      ! phenology index exceeds pft(co)%cropphen(5)
+      laiinc=-0.01*rlai 
+      
   ELSE 
       !Leaves are still allowed to grow
       !----------------------------------------------------------------------!
@@ -779,7 +777,7 @@ integer :: ssm,sss,i
           newopt=phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen))
           optinc=(newopt-oldopt)*pft(co)%optlai
           IF(optinc*msv%mv_leafmol*12.0*1.25.LT.0.5*ssv(co)%nppstore(1)) THEN
-          !IF(optinc*12.0/pft(co)%sla/18.0.LT.0.5*ssv(co)%nppstore(1)) THEN
+          !IF(optinc*12.0/pft(co)%sla/25.0.LT.0.5*ssv(co)%nppstore(1)) THEN
               laiinc=optinc
           ELSE
               gddmix(1)=oldphen*pft(co)%cropgdd(1,3)
@@ -793,7 +791,7 @@ integer :: ssm,sss,i
 
               laiinc=0. 
               DO WHILE (gddmix(3).LE.gddmix(2).AND.0.5*ssv(co)%nppstore(1).GE.laiinc*msv%mv_leafmol*1.25*12.0)
-              !DO WHILE (gddmix(3).LE.gddmix(2).AND.0.5*ssv(co)%nppstore(1).GE.laiinc*12.0/pft(co)%sla/18.0) 
+              !DO WHILE (gddmix(3).LE.gddmix(2).AND.0.5*ssv(co)%nppstore(1).GE.laiinc*12.0/pft(co)%sla/25.0) 
 
                   !IF(ssp%year.EQ.2001) THEN
                   !  WRITE(*,*)'B: ',mnth,day,oldphen,gddmix(3),phen,gddmix(2),&
@@ -880,7 +878,7 @@ real(dp) :: laiinc,leaflit,resp,ans,yy,stemnpp,total_carbon,old_total_carbon, &
  daygpp,resp_m,lit
 integer :: i,co,k
 logical :: check_closure
-real(dp) :: sumrr,sumsr,sumlr,summr
+real(dp) :: sumrr,sumsr,sumlr,summr,yielit
 save :: sumrr,sumsr,sumlr,summr
 !----------------------------------------------------------------------!
 
@@ -898,13 +896,14 @@ resp = resp_l
 ! Check carbon closure.
 !----------------------------------------------------------------------!
 if (check_closure) then
-  old_total_carbon = ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
- ssv(co)%stem%tot + ssv(co)%root%tot + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
+  old_total_carbon = ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
+ ssv(co)%stem%tot(1) + ssv(co)%root%tot(1) + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
 endif
 
-! Subtracts carbon for new leaves but it does so from both nppstores?
-! Also finds new leaf respiration by adding the respiration of the new
-! leaves (resp_m) but what does 0.25 stands for?
+! Subtracts carbon for new leaves of laiinc from nppstore(1) after converting
+! from LAI to carbon.The reason it has the 1.25 is for the additional carbon
+! cost of creating leaves.That cost is added as respiration by multiplying
+! by 0.25.
 !----------------------------------------------------------------------!
 ! Pay for new leaves.
 !----------------------------------------------------------------------!
@@ -920,9 +919,7 @@ endif
 !----------------------------------------------------------------------!
 ! Age leaves by one day, kill any which have died of old age,
 ! adjust by laiinc (+ or -), and then sum to get 'rlai'.
-! 'leafls' is an integer variable of leaf lifespan in days.
 !----------------------------------------------------------------------!
-! leaflit is the leaf litter
 call LAI_ADD(laiinc,leaflit)
 
 !----------------------------------------------------------------------!
@@ -930,9 +927,16 @@ call LAI_ADD(laiinc,leaflit)
 !----------------------------------------------------------------------!
 call LAI_DIST(lmor_sc,leaflit)
 
+! Deals with crop harvest.Needs the harvest flag and a positive lai.
+! lit is the C litter that is produced after harvest and yielit is the C yield.
+! The latter is completely removed from the system which is the reason why it 
+! appears in the carbon closure checks,so that it wont signal a carbon breach,
+! even though there is one.The sum of lit and yielit equals the crop C right 
+! before it was harvested as it can be seen in the harv sub
 lit=0.
-IF(pft(co)%phen.EQ.3.AND.ssv(co)%harvest(1).EQ.1.AND.ssv(co)%lai%tot.GT.0.) THEN
-  CALL HARV(lit)
+yielit=0.
+IF(pft(co)%phen.EQ.3.AND.ssv(co)%harvest(1).EQ.1.AND.ssv(co)%lai%tot(1).GT.0.) THEN
+  CALL HARV(lit,yielit)
 ENDIF
 leaflit=leaflit+lit
 
@@ -940,9 +944,9 @@ leaflit=leaflit+lit
 ! Check carbon closure.
 !----------------------------------------------------------------------!
 if (check_closure) then
-  ans = ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
- ssv(co)%stem%tot + ssv(co)%root%tot + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
-  if (abs(ans+leaflit-old_total_carbon) > 1.0e-3) then
+  ans = ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
+ ssv(co)%stem%tot(1) + ssv(co)%root%tot(1) + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
+  if (abs(ans+leaflit+yielit-old_total_carbon) > 1.0e-3) then
     write(*,*) 'Breach of carbon after leaves:',ans+leaflit-old_total_carbon,' g/m^2.'
     write(*,*) ans,leaflit,old_total_carbon
     write(*,*) 'lai ',ssv(co)%lai
@@ -960,7 +964,8 @@ endif
 !----------------------------------------------------------------------!
 ! Pay for days roots if veg exists
 !----------------------------------------------------------------------!
-! A part of nppstore goes to the roots (yy) or rootnpp
+! A fraction of nppstore goes to the roots (yy) or rootnpp.
+! The fraction is constant
 if ((ssv(co)%nppstore(1)>0.0).and.(daynpp>0.0)) then
   yy = ssv(co)%nppstore(1)*tgp%p_rootfr
 else
@@ -979,6 +984,8 @@ ssv(co)%bio(2) = ssv(co)%bio(2) + root_fixed
 !----------------------------------------------------------------------!
 ! Root resperation
 !----------------------------------------------------------------------!
+! Calculates root respiration.msv%mv_respref is a function of soil moisture
+! and temperature and its calculated daily in SET_MISC_VALUES
 call ROOT_DIST(msv%mv_respref,resp_r)
 resp = resp + resp_r
 rootnpp = rootnpp - resp_r
@@ -987,9 +994,9 @@ rootnpp = rootnpp - resp_r
 ! Check carbon closure.
 !----------------------------------------------------------------------!
 if (check_closure) then
-  ans = ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
- ssv(co)%stem%tot + ssv(co)%root%tot + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
-  if (abs(ans+leaflit-old_total_carbon) > 1.0e-3) then
+  ans = ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
+ ssv(co)%stem%tot(1) + ssv(co)%root%tot(1) + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
+  if (abs(ans+leaflit+yielit-old_total_carbon) > 1.0e-3) then
     write(*,*) 'Breach of carbon after roots:',ans+leaflit-old_total_carbon,' g/m^2.'
     stop
   endif
@@ -998,6 +1005,8 @@ endif
 !----------------------------------------------------------------------!
 ! Stem resperation, and NPP                                            !
 !----------------------------------------------------------------------!
+! A fraction of nppstore goes to the stem (yy) or stemnpp.
+! The fraction is constant
 if ((ssv(co)%nppstore(1)>0.0).and.(daynpp>0.0)) then
   yy = ssv(co)%nppstore(1)*tgp%p_stemfr
   ssv(co)%nppstore(1) = ssv(co)%nppstore(1) - yy
@@ -1015,6 +1024,8 @@ ssv(co)%bio(1) = ssv(co)%bio(1) + stem_fixed
 !----------------------------------------------------------------------!
 ! Stem respiration.
 !----------------------------------------------------------------------!
+! Calculates stem respiration.msv%mv_respref is a function of soil moisture
+! and temperature and its calculated daily in SET_MISC_VALUES
 call STEM_DIST(msv%mv_respref,resp_s)
 resp = resp + resp_s
 stemnpp = stemnpp - resp_s
@@ -1023,9 +1034,9 @@ stemnpp = stemnpp - resp_s
 ! Check carbon closure.
 !----------------------------------------------------------------------!
 if (check_closure) then
-  ans = ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
- ssv(co)%stem%tot + ssv(co)%root%tot + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
-  if (abs(ans+leaflit-old_total_carbon) > 1.0e-3) then
+  ans = ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
+ ssv(co)%stem%tot(1) + ssv(co)%root%tot(1) + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
+  if (abs(ans+leaflit+yielit-old_total_carbon) > 1.0e-3) then
     write(*,*) 'Breach of carbon after stems:',ans+leaflit-old_total_carbon,' g/m^2.'
     stop
   endif
@@ -1041,9 +1052,9 @@ ssv(co)%npp = daynpp
 ! Check carbon closure.
 !----------------------------------------------------------------------!
 if (check_closure) then
-  total_carbon = ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + ssv(co)%nppstore(1) + &
- ssv(co)%stem%tot + ssv(co)%root%tot + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
-  if (abs(total_carbon+leaflit-old_total_carbon) > 1.0e-3) then
+  total_carbon = ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
+ ssv(co)%stem%tot(1) + ssv(co)%root%tot(1) + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
+  if (abs(total_carbon+leaflit+yielit-old_total_carbon) > 1.0e-3) then
     write(*,*) 'Breach of carbon in phenology:',ans+leaflit-old_total_carbon,' g/m^2.'
     stop
   endif
@@ -1144,7 +1155,7 @@ end subroutine suma_add
 !                   stem_add  :: phenological_methods                  !
 !                   ---------------------------------                  !
 !                                                                      !
-!  SUBROUTINE stem_add(laiinc,leaflit)                                 !
+!  SUBROUTINE stem_add(stem_inc,stem_fixed)                            !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Update stems by adding daily increase and removing via mortality.
@@ -1158,6 +1169,13 @@ real(dp) :: stem_inc,stem_fixed
 integer :: i,co,k
 !----------------------------------------------------------------------!
 
+! Check lai_add comments,this is an equivalent subroutine to lai_add but 
+! for stem.Dont mind the variable names.Unlike lai_add where it deals
+! with lai,this is carbon.
+! The dead carbon from stem doesnt go to the litter as it does for lai_add
+! but is added to bio(1) pool when it is done calling this sub.
+
+
 co = ssp%cohort
 stem_fixed = 0.0
 
@@ -1165,20 +1183,20 @@ stem_fixed = 0.0
 ! Stem death through old age.
 !----------------------------------------------------------------------!
 if (ssv(co)%stem%no > 0) then
-  if (ssp%jday-int(ssv(co)%stem%c(1)%age) > pft(co)%sls) then
-    k = stem_comp_length-(ssp%jday-int(ssv(co)%stem%c(1)%age)-pft(co)%sls)+1
+  if (ssp%jday-int(ssv(co)%stem%c(1,1)%age) > pft(co)%sls) then
+    k = stem_comp_length-(ssp%jday-int(ssv(co)%stem%c(1,1)%age)-pft(co)%sls)+1
     if (k == 1) then
-      stem_fixed = ssv(co)%stem%c(1)%val
+      stem_fixed = ssv(co)%stem%c(1,1)%val
       do i=1,ssv(co)%stem%no-1
-        ssv(co)%stem%c(i)%val = ssv(co)%stem%c(i+1)%val
-        ssv(co)%stem%c(i)%age = ssv(co)%stem%c(i+1)%age
+        ssv(co)%stem%c(i,1)%val = ssv(co)%stem%c(i+1,1)%val
+        ssv(co)%stem%c(i,1)%age = ssv(co)%stem%c(i+1,1)%age
       enddo
-      ssv(co)%stem%c(ssv(co)%stem%no)%val = 0.0
-      ssv(co)%stem%c(ssv(co)%stem%no)%age = 0.0
+      ssv(co)%stem%c(ssv(co)%stem%no,1)%val = 0.0
+      ssv(co)%stem%c(ssv(co)%stem%no,1)%age = 0.0
       ssv(co)%stem%no = ssv(co)%stem%no - 1
     else
-      stem_fixed = ssv(co)%stem%c(1)%val/real(k)
-      ssv(co)%stem%c(1)%val = ssv(co)%stem%c(1)%val*(real(k-1)/real(k))
+      stem_fixed = ssv(co)%stem%c(1,1)%val/real(k)
+      ssv(co)%stem%c(1,1)%val = ssv(co)%stem%c(1,1)%val*(real(k-1)/real(k))
     endif
   endif
 endif
@@ -1190,14 +1208,14 @@ endif
 if (stem_inc>0.0) then
   if (ssv(co)%stem%no == 0) then
     ssv(co)%stem%no = 1
-    ssv(co)%stem%c(ssv(co)%stem%no)%val = 0.0
-    ssv(co)%stem%c(ssv(co)%stem%no)%age = ssp%jday
-  elseif (ssp%jday-int(ssv(co)%stem%c(ssv(co)%stem%no)%age) >= stem_comp_length) then
+    ssv(co)%stem%c(ssv(co)%stem%no,1)%val = 0.0
+    ssv(co)%stem%c(ssv(co)%stem%no,1)%age = ssp%jday
+  elseif (ssp%jday-int(ssv(co)%stem%c(ssv(co)%stem%no,1)%age) >= stem_comp_length) then
     ssv(co)%stem%no = ssv(co)%stem%no + 1
-    ssv(co)%stem%c(ssv(co)%stem%no)%val = 0.0
-    ssv(co)%stem%c(ssv(co)%stem%no)%age = ssp%jday
+    ssv(co)%stem%c(ssv(co)%stem%no,1)%val = 0.0
+    ssv(co)%stem%c(ssv(co)%stem%no,1)%age = ssp%jday
   endif
-  ssv(co)%stem%c(ssv(co)%stem%no)%val =  ssv(co)%stem%c(ssv(co)%stem%no)%val + stem_inc
+  ssv(co)%stem%c(ssv(co)%stem%no,1)%val =  ssv(co)%stem%c(ssv(co)%stem%no,1)%val + stem_inc
 endif
 
 end subroutine stem_add
@@ -1225,27 +1243,33 @@ real(dp) :: laiinc,leaflit
 integer i,co,k
 !----------------------------------------------------------------------!
 
+! Check lai_add comments,this is an equivalent subroutine to lai_add but 
+! for roots.Dont mind the variable names.Unlike lai_add where it deals
+! with lai,this is carbon.
+! The dead carbon from roots doesnt go to the litter as it does for lai_add
+! but is added to bio(2) pool when it is done calling this sub.
+
 co = ssp%cohort
 leaflit = 0.0
 
 !----------------------------------------------------------------------!
-! Leaf death through old age.
+! Root death through old age.
 !----------------------------------------------------------------------!
 if (ssv(co)%root%no > 0) then
-  if (ssp%jday-int(ssv(co)%root%c(1)%age) > pft(co)%rls) then
-    k = root_comp_length-(ssp%jday-int(ssv(co)%root%c(1)%age)-pft(co)%rls)+1
+  if (ssp%jday-int(ssv(co)%root%c(1,1)%age) > pft(co)%rls) then
+    k = root_comp_length-(ssp%jday-int(ssv(co)%root%c(1,1)%age)-pft(co)%rls)+1
     if (k == 1) then
-      leaflit = ssv(co)%root%c(1)%val
+      leaflit = ssv(co)%root%c(1,1)%val
       do i=1,ssv(co)%root%no-1
-        ssv(co)%root%c(i)%val = ssv(co)%root%c(i+1)%val
-        ssv(co)%root%c(i)%age = ssv(co)%root%c(i+1)%age
+        ssv(co)%root%c(i,1)%val = ssv(co)%root%c(i+1,1)%val
+        ssv(co)%root%c(i,1)%age = ssv(co)%root%c(i+1,1)%age
       enddo
-      ssv(co)%root%c(ssv(co)%root%no)%val = 0.0
-      ssv(co)%root%c(ssv(co)%root%no)%age = 0.0
+      ssv(co)%root%c(ssv(co)%root%no,1)%val = 0.0
+      ssv(co)%root%c(ssv(co)%root%no,1)%age = 0.0
       ssv(co)%root%no = ssv(co)%root%no - 1
     else
-      leaflit = ssv(co)%root%c(1)%val/real(k)
-      ssv(co)%root%c(1)%val = ssv(co)%root%c(1)%val*&
+      leaflit = ssv(co)%root%c(1,1)%val/real(k)
+      ssv(co)%root%c(1,1)%val = ssv(co)%root%c(1,1)%val*&
  (real(k-1)/real(k))
     endif
   endif
@@ -1253,21 +1277,21 @@ endif
 
 ! Check lai_add for comments
 !----------------------------------------------------------------------!
-! Add on lai increase, create new compartment if necessary.
+! Add on root increase, create new compartment if necessary.
 !----------------------------------------------------------------------!
 if (laiinc>0.0) then
   if (ssv(co)%root%no == 0) then
     ssv(co)%root%no = 1
-    ssv(co)%root%c(ssv(co)%root%no)%val = 0.0
-    ssv(co)%root%c(ssv(co)%root%no)%age = ssp%jday
-  elseif (ssp%jday-int(ssv(co)%root%c(ssv(co)%root%no)%age) &
+    ssv(co)%root%c(ssv(co)%root%no,1)%val = 0.0
+    ssv(co)%root%c(ssv(co)%root%no,1)%age = ssp%jday
+  elseif (ssp%jday-int(ssv(co)%root%c(ssv(co)%root%no,1)%age) &
  >= root_comp_length) then
     ssv(co)%root%no = ssv(co)%root%no + 1
-    ssv(co)%root%c(ssv(co)%root%no)%val = 0.0
-    ssv(co)%root%c(ssv(co)%root%no)%age = ssp%jday
+    ssv(co)%root%c(ssv(co)%root%no,1)%val = 0.0
+    ssv(co)%root%c(ssv(co)%root%no,1)%age = ssp%jday
   endif
-  ssv(co)%root%c(ssv(co)%root%no)%val =  &
- ssv(co)%root%c(ssv(co)%root%no)%val + laiinc
+  ssv(co)%root%c(ssv(co)%root%no,1)%val =  &
+ ssv(co)%root%c(ssv(co)%root%no,1)%val + laiinc
 endif
 
 end subroutine root_add
@@ -1291,73 +1315,85 @@ end subroutine root_add
 !----------------------------------------------------------------------!
 subroutine lai_add(laiinc,leaflit)
 !**********************************************************************!
-real(dp) :: laiinc,leaflit
+real(dp) :: laiinc,leaflit,lai_tot
 integer :: i,co,k
 !----------------------------------------------------------------------!
 
 co = ssp%cohort
 
-! For each cohort there will be carbon compartments where the leaf
-! carbon is stored,several for the whole canopy.
+! For each cohort there will be carbon compartments where the leaf LAI
+! is stored,several for the whole canopy.
 ! These compartments can be found in ssv(co)%lai where
 ! ssv(co)%lai%no is the number of available compartments,
 ! ssv(co)%lai%c(ssv(co)%lai%no)%age the julian day when the compartment
-! was created and ssv(co)%lai%c(ssv(co)%lai%no)%val the carbon
-! in that compartment.
+! was created and ssv(co)%lai%c(ssv(co)%lai%no)%val the lai
+! in that compartment (not the carbon!)
+
 ! For old age it checks if the age of the first compartment which will always
 ! be the older one is greater than the leaf life span lls,usually 180 days.
-! If that applies then the compartment will begin to senence which doesnt
+! If that applies then the compartment will begin to senense which doesnt
 ! happen immidiately but takes  lai_comp_length days,set to 10.
 ! k is a countdown from lai_comp_length to 1 days, immidiately after the
 ! leaf reached its life span. For each day afterwards a fraction of its
-! carbon will be sent to the litter and the remainder will stay in the leaf.
-! The process will continue until k==1 where the carbon compartment will die
-! ,the remainding carbon goes to litter and all other compartments
+! lai will be sent to the litter through the leaflit variable
+! and the remainder will stay in the leaf.
+! The process will continue until k==1 where the compartment will die
+! ,the remainding lai goes to litter and all other compartments
 ! indexes move down by 1 index.Index 1 is always the oldest that dies first.
+
+! Even though the leaflit variable holds lai,in lai_dist sub it is finally
+! converted to carbon before being send to the litter.
 
 !----------------------------------------------------------------------!
 ! Leaf death through old age.
 !----------------------------------------------------------------------!
 if (ssv(co)%lai%no > 0) then
-  if (ssp%jday-int(ssv(co)%lai%c(1)%age) > pft(co)%lls) then
-    k = lai_comp_length-(ssp%jday-int(ssv(co)%lai%c(1)%age)-pft(co)%lls)+1
+  if (ssp%jday-int(ssv(co)%lai%c(1,1)%age) > pft(co)%lls) then
+    k = lai_comp_length-(ssp%jday-int(ssv(co)%lai%c(1,1)%age)-pft(co)%lls)+1
     if (k == 1) then
-      leaflit = ssv(co)%lai%c(1)%val
+      leaflit = ssv(co)%lai%c(1,1)%val
       do i=1,ssv(co)%lai%no-1
-        ssv(co)%lai%c(i)%val = ssv(co)%lai%c(i+1)%val
-        ssv(co)%lai%c(i)%age = ssv(co)%lai%c(i+1)%age
+        ssv(co)%lai%c(i,1)%val = ssv(co)%lai%c(i+1,1)%val
+        ssv(co)%lai%c(i,1)%age = ssv(co)%lai%c(i+1,1)%age
       enddo
-      ssv(co)%lai%c(ssv(co)%lai%no)%val = 0.0
-      ssv(co)%lai%c(ssv(co)%lai%no)%age = 0.0
+      ssv(co)%lai%c(ssv(co)%lai%no,1)%val = 0.0
+      ssv(co)%lai%c(ssv(co)%lai%no,1)%age = 0.0
       ssv(co)%lai%no = ssv(co)%lai%no - 1
     else
-      leaflit = ssv(co)%lai%c(1)%val/real(k)
-      ssv(co)%lai%c(1)%val = ssv(co)%lai%c(1)%val*(real(k-1)/real(k))
+      leaflit = ssv(co)%lai%c(1,1)%val/real(k)
+      ssv(co)%lai%c(1,1)%val = ssv(co)%lai%c(1,1)%val*(real(k-1)/real(k))
     endif
   endif
 endif
 
-! Checks if laiinc>0 which is the carbon allocated to go to the canopy
-! Carbon keeps getting added to each compartment
-! until it reaces a certain age in which case a new compartment is created
-! and carbon starts being stored there.If there isn't any compartment,
-! one is created.
+! Checks if laiinc>0.If there is no LAI compartment it will add one. 
+! If the oldest compartment has reached a certain age it will create
+! another one and add LAI to the younger compartment.
+! Carbon keeps getting added to each compartment.
 !----------------------------------------------------------------------!
 ! Add on lai increase, create new compartment if necessary.
 !----------------------------------------------------------------------!
 if (laiinc>0.0) then
   if (ssv(co)%lai%no == 0) then
     ssv(co)%lai%no = 1
-    ssv(co)%lai%c(ssv(co)%lai%no)%val = 0.0
-    ssv(co)%lai%c(ssv(co)%lai%no)%age = ssp%jday
-  elseif (ssp%jday-int(ssv(co)%lai%c(ssv(co)%lai%no)%age) >= lai_comp_length) then
+    ssv(co)%lai%c(ssv(co)%lai%no,1)%val = 0.0
+    ssv(co)%lai%c(ssv(co)%lai%no,1)%age = ssp%jday
+  elseif (ssp%jday-int(ssv(co)%lai%c(ssv(co)%lai%no,1)%age) >= lai_comp_length) then
     ssv(co)%lai%no = ssv(co)%lai%no + 1
-    ssv(co)%lai%c(ssv(co)%lai%no)%val = 0.0
-    ssv(co)%lai%c(ssv(co)%lai%no)%age = ssp%jday
+    ssv(co)%lai%c(ssv(co)%lai%no,1)%val = 0.0
+    ssv(co)%lai%c(ssv(co)%lai%no,1)%age = ssp%jday
   endif
-  ssv(co)%lai%c(ssv(co)%lai%no)%val =  ssv(co)%lai%c(ssv(co)%lai%no)%val + laiinc
-
+  ssv(co)%lai%c(ssv(co)%lai%no,1)%val =  ssv(co)%lai%c(ssv(co)%lai%no,1)%val + laiinc
+else
+  if(laiinc<0.0) then
+    lai_tot=ssv(co)%lai%tot(1)
+    do i=1,ssv(co)%lai%no
+      leaflit=leaflit-ssv(co)%lai%c(i,1)%val*laiinc/lai_tot
+      ssv(co)%lai%c(i,1)%val=ssv(co)%lai%c(i,1)%val*(lai_tot+laiinc)/lai_tot
+    enddo
+  endif
 endif
+
 
 end subroutine lai_add
 
@@ -1386,19 +1422,23 @@ integer :: i,co
 real(dp) :: ans,resp,respref
 !**********************************************************************!
 
+! Applies stem respiration regulated by respref.Does so for all compartments
+! removing the carbon from each and adding it up to the total resp.
+! Also calculates the total carbon in the stem compartments
+
 co = ssp%cohort
 
 resp = 0.0
 
 do i=1,ssv(co)%stem%no
-  ans = ssv(co)%stem%c(i)%val*respref
+  ans = ssv(co)%stem%c(i,1)%val*respref
   resp = resp + ans
-  ssv(co)%stem%c(i)%val = ssv(co)%stem%c(i)%val - ans
+  ssv(co)%stem%c(i,1)%val = ssv(co)%stem%c(i,1)%val - ans
 enddo
 
-ssv(co)%stem%tot = 0.0
+ssv(co)%stem%tot(1) = 0.0
 do i=1,ssv(co)%stem%no
-  ssv(co)%stem%tot = ssv(co)%stem%tot + ssv(co)%stem%c(i)%val
+  ssv(co)%stem%tot(1) = ssv(co)%stem%tot(1) + ssv(co)%stem%c(i,1)%val
 enddo
 
 end subroutine stem_dist
@@ -1428,19 +1468,23 @@ integer :: i,co
 real(dp) :: ans,resp,respref
 !----------------------------------------------------------------------!
 
+! Applies root respiration regulated by respref.Does so for all compartments
+! removing the carbon from each and adding it up to the total resp.
+! Also calculates the total carbon in the root compartments
+
 co = ssp%cohort
 
 resp = 0.0
 
 do i=1,ssv(co)%root%no
-  ans = ssv(co)%root%c(i)%val*respref
+  ans = ssv(co)%root%c(i,1)%val*respref
   resp = resp + ans
-  ssv(co)%root%c(i)%val = ssv(co)%root%c(i)%val - ans
+  ssv(co)%root%c(i,1)%val = ssv(co)%root%c(i,1)%val - ans
 enddo
 
-ssv(co)%root%tot = 0.0
+ssv(co)%root%tot(1) = 0.0
 do i=1,ssv(co)%root%no
-  ssv(co)%root%tot = ssv(co)%root%tot + ssv(co)%root%c(i)%val
+  ssv(co)%root%tot(1) = ssv(co)%root%tot(1) + ssv(co)%root%c(i,1)%val
 enddo
 
 end subroutine ROOT_DIST
@@ -1472,20 +1516,25 @@ real(dp) :: lmor_sc(3600),ans,leaflit
 
 co = ssp%cohort
 
+! Applies daily leaf mortality which is different from old age.
+! It is a function of the age of the compartment and its value can be found in
+! lmor_sc.Here is not really implemented as the values it gives (ans) are close to
+! 1 which will make the mortality (1-ans) 0.
+
 do i=1,ssv(ssp%cohort)%lai%no
-  ans = lmor_sc(int(ssp%jday-ssv(co)%lai%c(i)%age+1.5))*0.0+1.0
-  leaflit = leaflit + ssv(co)%lai%c(i)%val*(1.0 - ans)
-  ssv(co)%lai%c(i)%val = ssv(co)%lai%c(i)%val*ans
+  ans = lmor_sc(int(ssp%jday-ssv(co)%lai%c(i,1)%age+1.5))*0.0+1.0
+  leaflit = leaflit + ssv(co)%lai%c(i,1)%val*(1.0 - ans)
+  ssv(co)%lai%c(i,1)%val = ssv(co)%lai%c(i,1)%val*ans
 enddo
 
 ! Sum up the lai compartments.
-ssv(co)%lai%tot = 0.0
+ssv(co)%lai%tot(1) = 0.0
 do i=1,ssv(co)%lai%no
-  ssv(co)%lai%tot = ssv(co)%lai%tot + ssv(co)%lai%c(i)%val
+  ssv(co)%lai%tot(1) = ssv(co)%lai%tot(1) + ssv(co)%lai%c(i,1)%val
 enddo
 
 ! Leaf litter
-leaflit = leaflit*12.0/pft(co)%sla/18.0
+leaflit = leaflit*12.0/pft(co)%sla/25.0
 
 end subroutine lai_dist
 

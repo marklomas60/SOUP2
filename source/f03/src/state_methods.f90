@@ -157,8 +157,8 @@ ssv_temp%dschill = int((real(ssv(co1)%dschill)*t1 + real(ssv(co2)%dschill)*t2)/t
 !print*,ssv(co2)%lai_comps(1:ssv(co2)%lai%no,1)
 
 oldestx = ssp%jday
-if (ssv(co1)%lai%no > 0) oldestx = min(oldestx,ssv(co1)%lai%c(1)%age)
-if (ssv(co2)%lai%no > 0) oldestx = min(oldestx,ssv(co2)%lai%c(1)%age)
+if (ssv(co1)%lai%no > 0) oldestx = min(oldestx,ssv(co1)%lai%c(1,1)%age)
+if (ssv(co2)%lai%no > 0) oldestx = min(oldestx,ssv(co2)%lai%c(1,1)%age)
 
 do i=1,max_lai_comps*lai_comp_length
   comps(i) = 0.0
@@ -166,17 +166,17 @@ enddo
 
 do i=1,ssv(co1)%lai%no
   do k=1,lai_comp_length
-    j = int(ssv(co1)%lai%c(i)%age - oldestx + 0.5) + k
+    j = int(ssv(co1)%lai%c(i,1)%age - oldestx + 0.5) + k
     j = min(j,ssp%jday-int(oldestx)+1)
-    comps(j) = comps(j) + ssv(co1)%lai%c(i)%val*t1/real(lai_comp_length)
+    comps(j) = comps(j) + ssv(co1)%lai%c(i,1)%val*t1/real(lai_comp_length)
   enddo
 enddo
 
 do i=1,ssv(co2)%lai%no
   do k=1,lai_comp_length
-    j = int(ssv(co2)%lai%c(i)%age - oldestx + 0.5) + k
+    j = int(ssv(co2)%lai%c(i,1)%age - oldestx + 0.5) + k
     j = min(j,ssp%jday-int(oldestx)+1)
-    comps(j) = comps(j) + ssv(co2)%lai%c(i)%val*t2/real(lai_comp_length)
+    comps(j) = comps(j) + ssv(co2)%lai%c(i,1)%val*t2/real(lai_comp_length)
   enddo
 enddo
 
@@ -191,30 +191,30 @@ do i=1,max_lai_comps
   enddo
   if (ans > 0.0) then
     ssv_temp%lai%no = ssv_temp%lai%no + 1
-    ssv_temp%lai%c(ssv_temp%lai%no)%val = ans
-    ssv_temp%lai%c(ssv_temp%lai%no)%age = real((i-1)*lai_comp_length) + oldestx
+    ssv_temp%lai%c(ssv_temp%lai%no,1)%val = ans
+    ssv_temp%lai%c(ssv_temp%lai%no,1)%age = real((i-1)*lai_comp_length) + oldestx
   endif
 enddo
-ssv_temp%lai%tot = (ssv(co1)%lai%tot*t1 + ssv(co2)%lai%tot*t2)/t12
+ssv_temp%lai%tot(1) = (ssv(co1)%lai%tot(1)*t1 + ssv(co2)%lai%tot(1)*t2)/t12
 
 !----------------------------------------------------------------------*
 oldestx = ssp%jday
-if (ssv(co1)%stem%no > 0) oldestx = min(oldestx,ssv(co1)%stem%c(1)%age)
-if (ssv(co2)%stem%no > 0) oldestx = min(oldestx,ssv(co2)%stem%c(1)%age)
+if (ssv(co1)%stem%no > 0) oldestx = min(oldestx,ssv(co1)%stem%c(1,1)%age)
+if (ssv(co2)%stem%no > 0) oldestx = min(oldestx,ssv(co2)%stem%c(1,1)%age)
 
 do i=1,max_stem_comps*stem_comp_length
   comps(i) = 0.0
 enddo
 do i=1,ssv(co1)%stem%no
   do k=1,stem_comp_length
-    j = int(ssv(co1)%stem%c(i)%age - oldestx + 0.5) + k
-    comps(j) = comps(j) + ssv(co1)%stem%c(i)%val*t1/real(stem_comp_length)
+    j = int(ssv(co1)%stem%c(i,1)%age - oldestx + 0.5) + k
+    comps(j) = comps(j) + ssv(co1)%stem%c(i,1)%val*t1/real(stem_comp_length)
   enddo
 enddo
 do i=1,ssv(co2)%stem%no
   do k=1,stem_comp_length
-    j = int(ssv(co2)%stem%c(i)%age - oldestx + 0.5) + k
-    comps(j) = comps(j) + ssv(co2)%stem%c(i)%val*t2/real(stem_comp_length)
+    j = int(ssv(co2)%stem%c(i,1)%age - oldestx + 0.5) + k
+    comps(j) = comps(j) + ssv(co2)%stem%c(i,1)%val*t2/real(stem_comp_length)
   enddo
 enddo
 do i=1,max_stem_comps*stem_comp_length
@@ -228,24 +228,24 @@ do i=1,max_stem_comps
   enddo
   if (ans > 0.0) then
     ssv_temp%stem%no = ssv_temp%stem%no + 1
-    ssv_temp%stem%c(ssv_temp%stem%no)%val = ans
-    ssv_temp%stem%c(ssv_temp%stem%no)%age = real((i-1)*stem_comp_length) + oldestx
+    ssv_temp%stem%c(ssv_temp%stem%no,1)%val = ans
+    ssv_temp%stem%c(ssv_temp%stem%no,1)%age = real((i-1)*stem_comp_length) + oldestx
   endif
 enddo
-ssv_temp%stem%tot = (ssv(co1)%stem%tot*t1 + ssv(co2)%stem%tot*t2)/t12
+ssv_temp%stem%tot(1) = (ssv(co1)%stem%tot(1)*t1 + ssv(co2)%stem%tot(1)*t2)/t12
 
 !----------------------------------------------------------------------*
 !oldest = ssp%jday
-!if (ssv(co1)%root%no > 0) oldest = min(oldest,real(ssv(co1)%root%c(1)%age))
-!if (ssv(co2)%root%no > 0) oldest = min(oldest,real(ssv(co2)%root%c(1)%age))
+!if (ssv(co1)%root%no > 0) oldest = min(oldest,real(ssv(co1)%root%c(1,1)%age))
+!if (ssv(co2)%root%no > 0) oldest = min(oldest,real(ssv(co2)%root%c(1,1)%age))
 
 oldestx = ssp%jday
-if (ssv(co1)%root%no > 0) oldestx = min(ssp%jday,ssv(co1)%root%c(1)%age)
-if (ssv(co2)%root%no > 0) oldestx = min(oldestx,ssv(co2)%root%c(1)%age)
+if (ssv(co1)%root%no > 0) oldestx = min(ssp%jday,ssv(co1)%root%c(1,1)%age)
+if (ssv(co2)%root%no > 0) oldestx = min(oldestx,ssv(co2)%root%c(1,1)%age)
 
 !if (int(oldest).ne.oldestx) then
 !  print*,'oldest old new ',int(oldest),oldestx
-!  print*,ssv(co1)%root%c(1)%age,ssv(co2)%root%c(1)%age
+!  print*,ssv(co1)%root%c(1,1)%age,ssv(co2)%root%c(1,1)%age
 !  print*,ssp%jday
 !endif
 
@@ -254,14 +254,14 @@ do i=1,max_root_comps*root_comp_length
 enddo
 do i=1,ssv(co1)%root%no
   do k=1,root_comp_length
-    j = int(ssv(co1)%root%c(i)%age - oldestx + 0.5) + k
-    comps(j) = comps(j) + ssv(co1)%root%c(i)%val*t1/real(root_comp_length)
+    j = int(ssv(co1)%root%c(i,1)%age - oldestx + 0.5) + k
+    comps(j) = comps(j) + ssv(co1)%root%c(i,1)%val*t1/real(root_comp_length)
   enddo
 enddo
 do i=1,ssv(co2)%root%no
   do k=1,root_comp_length
-    j = int(ssv(co2)%root%c(i)%age - oldestx + 0.5) + k
-    comps(j) = comps(j) + ssv(co2)%root%c(i)%val*t2/real(root_comp_length)
+    j = int(ssv(co2)%root%c(i,1)%age - oldestx + 0.5) + k
+    comps(j) = comps(j) + ssv(co2)%root%c(i,1)%val*t2/real(root_comp_length)
   enddo
 enddo
 do i=1,max_root_comps*root_comp_length
@@ -275,11 +275,11 @@ do i=1,max_root_comps
   enddo
   if (ans > 0.0) then
     ssv_temp%root%no = ssv_temp%root%no + 1
-    ssv_temp%root%c(ssv_temp%root%no)%val = ans
-    ssv_temp%root%c(ssv_temp%root%no)%age = real((i-1)*root_comp_length) + oldestx
+    ssv_temp%root%c(ssv_temp%root%no,1)%val = ans
+    ssv_temp%root%c(ssv_temp%root%no,1)%age = real((i-1)*root_comp_length) + oldestx
   endif
 enddo
-ssv_temp%root%tot = (ssv(co1)%root%tot*t1 + ssv(co2)%root%tot*t2)/t12
+ssv_temp%root%tot(1) = (ssv(co1)%root%tot(1)*t1 + ssv(co2)%root%tot(1)*t2)/t12
 
 !----------------------------------------------------------------------*
 oldestx = ssp%jday
@@ -477,25 +477,25 @@ ssv(cohort)%dschill = 0
 ssv(cohort)%phu = 0.0
 
 do i=1,int(pft(cohort)%lls/lai_comp_length)+1
-  ssv(cohort)%lai%c(i)%val = 0.0
-  ssv(cohort)%lai%c(i)%age = 0.0
+  ssv(cohort)%lai%c(i,1)%val = 0.0
+  ssv(cohort)%lai%c(i,1)%age = 0.0
 enddo
 ssv(cohort)%lai%no = 0
-ssv(cohort)%lai%tot = 0.0
+ssv(cohort)%lai%tot(1) = 0.0
 
 do i=1,int(pft(cohort)%sls/stem_comp_length)+1
-  ssv(cohort)%stem%c(i)%val = 0.0
-  ssv(cohort)%stem%c(i)%age = 0.0
+  ssv(cohort)%stem%c(i,1)%val = 0.0
+  ssv(cohort)%stem%c(i,1)%age = 0.0
 enddo
 ssv(cohort)%stem%no = 0
-ssv(cohort)%stem%tot = 0.0
+ssv(cohort)%stem%tot(1) = 0.0
 
 do i=1,int(pft(cohort)%rls/root_comp_length)+1
-  ssv(cohort)%root%c(i)%val = 0.0
-  ssv(cohort)%root%c(i)%age = 0
+  ssv(cohort)%root%c(i,1)%val = 0.0
+  ssv(cohort)%root%c(i,1)%age = 0
 enddo
 ssv(cohort)%root%no = 0
-ssv(cohort)%root%tot = 0.0
+ssv(cohort)%root%tot(1) = 0.0
 
 do i=1,int(360/suma_comp_length)+1
   ssv(cohort)%suma%c(i)%val = 0.0
@@ -545,7 +545,7 @@ ft_carbon = 0.0
 do ft=1,ssp%cohorts
   ans = 0.0
 
-  if (pft(ft)%sla > 0.0)  ans = ans + ssv(ft)%lai%tot*12.0/pft(ft)%sla/18.0
+  if (pft(ft)%sla > 0.0)  ans = ans + ssv(ft)%lai%tot(1)*12.0/pft(ft)%sla/25.0
 
   ans2 = ans
 
@@ -553,8 +553,8 @@ do ft=1,ssp%cohorts
     ans = ans + ssv(ft)%c(i)
   enddo
 
-  ans = ans + ssv(ft)%stem%tot
-  ans = ans + ssv(ft)%root%tot
+  ans = ans + ssv(ft)%stem%tot(1)
+  ans = ans + ssv(ft)%root%tot(1)
 
   ans = ans + ssv(ft)%nppstore(1) + ssv(ft)%bio(1) + ssv(ft)%bio(2)
 
@@ -562,7 +562,7 @@ do ft=1,ssp%cohorts
 
   if (show_all)  write(*,'(i3,10f8.1)') ft,ssv(ft)%age,ssv(ft)%cov,total_carbon-ft_carbon,ans2, &
  (ssv(ft)%c(1)+ssv(ft)%c(2)+ssv(ft)%c(3)+ssv(ft)%c(4)+ssv(ft)%c(5)+ssv(ft)%c(6)+ &
- ssv(ft)%c(7)+ssv(ft)%c(8)),ssv(ft)%lai%tot*12.0/pft(ft)%sla/18.0,ssv(ft)%stem%tot,ssv(ft)%root%tot,ssv(ft)%slc,ssv(ft)%rlc
+ ssv(ft)%c(7)+ssv(ft)%c(8)),ssv(ft)%lai%tot(1)*12.0/pft(ft)%sla/25.0,ssv(ft)%stem%tot(1),ssv(ft)%root%tot(1),ssv(ft)%slc,ssv(ft)%rlc
   ft_carbon = total_carbon
 
 enddo
@@ -579,13 +579,77 @@ if (show_all) write(*,*) 'Grand total     ',total_carbon
 end subroutine sum_carbon
 
 
+!!----------------------------------------------------------------------!
+!!**********************************************************************!
+!!                                                                      !
+!!          restrict_cohort_numbers :: accumulate_dist_soil_res         !
+!!          ---------------------------------------------------         !
+!!                                                                      !
+!!> @bried accumulate_dist)soil_res                                     !
+!!! @details ! Gets called when a cohort needs to die either by fire or !
+!!! low NPP.Sends carbon and water pools linked with the specific cohort!
+!!! to ssp%new... to be recycled later.Most importantly it calls        !
+!!! INITIALISE_STATE_COHORT function which will set ssv parameters for  !
+!!! this cohort to zero.
+!!!
+!!! @author Mark Lomas
+!!! @date Feb 2006
+!!**********************************************************************!
+!subroutine accumulate_dist_soil_res(ft,x)
+!!**********************************************************************!
+!integer :: ft,i
+!real(dp) :: x,active_leaf(max_cohorts),active_stem(max_cohorts),active_root(max_cohorts)
+!!----------------------------------------------------------------------!
+!
+!  if (pft(ft)%sla > 0.0) then
+!    active_leaf(ft) = ssv(ft)%lai%tot(1)*12.0/pft(ft)%sla/25.0
+!  else
+!    active_leaf(ft) = 0.0
+!  endif
+!  active_stem(ft) = ssv(ft)%stem%tot(1)
+!  active_root(ft) = ssv(ft)%root%tot(1)
+!
+!  do i=1,8
+!    ssp%new_c(i) = ssp%new_c(i) + ssv(ft)%c(i)*ssv(ft)%cov*x
+!    ssp%new_n(i) = ssp%new_n(i) + ssv(ft)%n(i)*ssv(ft)%cov*x
+!  enddo
+!
+!  do i=1,3
+!    ssp%new_minn(i) = ssp%new_minn(i) + ssv(ft)%minn(i)*ssv(ft)%cov*x
+!  enddo
+!  do i=1,4
+!    ssp%new_soil_h2o(i) = ssp%new_soil_h2o(i) + ssv(ft)%soil_h2o(i)*ssv(ft)%cov*x
+!  enddo
+!  ssp%new_snow = ssp%new_snow + ssv(ft)%snow*ssv(ft)%cov*x
+!  ssp%new_l_snow = ssp%new_l_snow + ssv(ft)%l_snow*ssv(ft)%cov*x
+!  ssp%new_slc = ssp%new_slc + (ssv(ft)%bio(1) + active_leaf(ft) + active_stem(ft) + &
+! active_root(ft) + ssv(ft)%nppstore(1))*ssv(ft)%cov*x + ssv(ft)%slc*x
+!  ssp%new_rlc = ssp%new_rlc + ssv(ft)%bio(2)*ssv(ft)%cov*x + ssv(ft)%rlc*x
+!  ssp%new_sln = ssp%new_sln + ssv(ft)%sln*x
+!  ssp%new_rln = ssp%new_rln + ssv(ft)%rln*x
+!
+!  if (x > 0.99999) then
+!    ssp%new_cov = ssp%new_cov + ssv(ft)%cov
+!    call INITIALISE_STATE_COHORT(ft)
+!  else
+!    ssp%new_cov    = ssp%new_cov + ssv(ft)%cov*x
+!    ssv(ft)%cov    = ssv(ft)%cov*(1.0 - x)
+!    ssv(ft)%slc    = ssv(ft)%slc*(1.0 - x)
+!    ssv(ft)%rlc    = ssv(ft)%rlc*(1.0 - x)
+!    ssv(ft)%sln    = ssv(ft)%sln*(1.0 - x)
+!    ssv(ft)%rln    = ssv(ft)%rln*(1.0 - x)
+!  endif
+!
+!end subroutine accumulate_dist_soil_res
+!
+
 !----------------------------------------------------------------------!
 !**********************************************************************!
 !                                                                      !
 !          restrict_cohort_numbers :: accumulate_dist_soil_res         !
 !          ---------------------------------------------------         !
 !                                                                      !
-!> @bried accumulate_dist)soil_res                                     !
+!> @brief accumulate_dist_soil_res                                     !
 !! @details ! Gets called when a cohort needs to die either by fire or !
 !! low NPP.Sends carbon and water pools linked with the specific cohort!
 !! to ssp%new... to be recycled later.Most importantly it calls        !
@@ -602,23 +666,29 @@ real(dp) :: x,active_leaf(max_cohorts),active_stem(max_cohorts),active_root(max_
 !----------------------------------------------------------------------!
 
   if (pft(ft)%sla > 0.0) then
-    active_leaf(ft) = ssv(ft)%lai%tot*12.0/pft(ft)%sla/18.0
+    active_leaf(ft) = ssv(ft)%lai%tot(1)*12.0/pft(ft)%sla/25.0
   else
     active_leaf(ft) = 0.0
   endif
-  active_stem(ft) = ssv(ft)%stem%tot
-  active_root(ft) = ssv(ft)%root%tot
+  active_stem(ft) = ssv(ft)%stem%tot(1)
+  active_root(ft) = ssv(ft)%root%tot(1)
 
   do i=1,8
     ssp%new_c(i) = ssp%new_c(i) + ssv(ft)%c(i)*ssv(ft)%cov*x
     ssp%new_n(i) = ssp%new_n(i) + ssv(ft)%n(i)*ssv(ft)%cov*x
+
+    ssp%xnew_c(pft(ft)%itag,i) = ssp%xnew_c(pft(ft)%itag,i) + ssv(ft)%c(i)*ssv(ft)%cov*x
+    ssp%xnew_n(pft(ft)%itag,i) = ssp%xnew_n(pft(ft)%itag,i) + ssv(ft)%n(i)*ssv(ft)%cov*x
   enddo
 
   do i=1,3
     ssp%new_minn(i) = ssp%new_minn(i) + ssv(ft)%minn(i)*ssv(ft)%cov*x
+    ssp%xnew_minn(pft(ft)%itag,i) = ssp%xnew_minn(pft(ft)%itag,i) + ssv(ft)%minn(i)*ssv(ft)%cov*x
   enddo
+
   do i=1,4
     ssp%new_soil_h2o(i) = ssp%new_soil_h2o(i) + ssv(ft)%soil_h2o(i)*ssv(ft)%cov*x
+    ssp%xnew_soil_h2o(pft(ft)%itag,i) = ssp%xnew_soil_h2o(pft(ft)%itag,i) + ssv(ft)%soil_h2o(i)*ssv(ft)%cov*x
   enddo
   ssp%new_snow = ssp%new_snow + ssv(ft)%snow*ssv(ft)%cov*x
   ssp%new_l_snow = ssp%new_l_snow + ssv(ft)%l_snow*ssv(ft)%cov*x
@@ -628,11 +698,23 @@ real(dp) :: x,active_leaf(max_cohorts),active_stem(max_cohorts),active_root(max_
   ssp%new_sln = ssp%new_sln + ssv(ft)%sln*x
   ssp%new_rln = ssp%new_rln + ssv(ft)%rln*x
 
+  ssp%xnew_snow(pft(ft)%itag)   = ssp%xnew_snow(pft(ft)%itag) + ssv(ft)%snow*ssv(ft)%cov*x
+  ssp%xnew_l_snow(pft(ft)%itag) = ssp%xnew_l_snow(pft(ft)%itag) + ssv(ft)%l_snow*ssv(ft)%cov*x
+  ssp%xnew_slc(pft(ft)%itag)    = ssp%xnew_slc(pft(ft)%itag) + (ssv(ft)%bio(1) + active_leaf(ft) + active_stem(ft) + &
+ active_root(ft) + ssv(ft)%nppstore(1))*ssv(ft)%cov*x + ssv(ft)%slc*x
+  ssp%xnew_rlc(pft(ft)%itag)    = ssp%xnew_rlc(pft(ft)%itag) + ssv(ft)%bio(2)*ssv(ft)%cov*x + ssv(ft)%rlc*x
+  ssp%xnew_sln(pft(ft)%itag)    = ssp%xnew_sln(pft(ft)%itag) + ssv(ft)%sln*x
+  ssp%xnew_rln(pft(ft)%itag)    = ssp%xnew_rln(pft(ft)%itag) + ssv(ft)%rln*x
+
+
   if (x > 0.99999) then
     ssp%new_cov = ssp%new_cov + ssv(ft)%cov
+    ssp%xnew_cov(pft(ft)%itag) = ssp%xnew_cov(pft(ft)%itag) + ssv(ft)%cov
     call INITIALISE_STATE_COHORT(ft)
   else
     ssp%new_cov    = ssp%new_cov + ssv(ft)%cov*x
+    ssp%xnew_cov(pft(ft)%itag)    = ssp%xnew_cov(pft(ft)%itag) + ssv(ft)%cov*x
+
     ssv(ft)%cov    = ssv(ft)%cov*(1.0 - x)
     ssv(ft)%slc    = ssv(ft)%slc*(1.0 - x)
     ssv(ft)%rlc    = ssv(ft)%rlc*(1.0 - x)
@@ -645,6 +727,65 @@ end subroutine accumulate_dist_soil_res
 
 
 
+!!***********************************************************************
+!subroutine ACCUMULATE_BURNT_SOIL_RES(ft,x,firec)
+!!***********************************************************************
+!integer ft,i
+!real(dp) :: x,firec,active_leaf(max_cohorts),active_stem(max_cohorts),active_root(max_cohorts)
+!!***********************************************************************
+!
+!  if (pft(ft)%sla > 0.0) then
+!    active_leaf(ft) = ssv(ft)%lai%tot(1)*12.0/pft(ft)%sla/25.0
+!  else
+!    active_leaf(ft) = 0.0
+!  endif
+!  active_stem(ft) = ssv(ft)%stem%tot(1)
+!  active_root(ft) = ssv(ft)%root%tot(1)
+!
+!  do i=1,8
+!    ssp%new_c(i) = ssp%new_c(i) + ssv(ft)%c(i)*ssv(ft)%cov*x
+!    ssp%new_n(i) = ssp%new_n(i) + ssv(ft)%n(i)*ssv(ft)%cov*x
+!  enddo
+!  do i=1,3
+!    ssp%new_minn(i) = ssp%new_minn(i) + ssv(ft)%minn(i)*ssv(ft)%cov*x
+!  enddo
+!  do i=1,4
+!    ssp%new_soil_h2o(i) = ssp%new_soil_h2o(i) + ssv(ft)%soil_h2o(i)*ssv(ft)%cov*x
+!  enddo
+!  ssp%new_snow = ssp%new_snow + ssv(ft)%snow*ssv(ft)%cov*x
+!  ssp%new_l_snow = ssp%new_l_snow + ssv(ft)%l_snow*ssv(ft)%cov*x
+!
+!  ssp%new_slc = ssp%new_slc + (ssv(ft)%bio(1) + active_leaf(ft) + active_stem(ft) + &
+! ssv(ft)%nppstore(1))*ssv(ft)%cov*x*0.2 + ssv(ft)%slc*x
+!  ssp%new_rlc = ssp%new_rlc + (ssv(ft)%bio(2) + active_root(ft))*ssv(ft)%cov*x + ssv(ft)%rlc*x
+!  ssp%new_sln = ssp%new_sln + ssv(ft)%sln*x
+!  ssp%new_rln = ssp%new_rln + ssv(ft)%rln*x
+!
+!  firec = firec + (ssv(ft)%bio(1) + active_leaf(ft) + active_stem(ft) + &
+! ssv(ft)%nppstore(1))*ssv(ft)%cov*x*0.8
+!
+!  if (x > 0.99999) then
+!    ssp%new_cov = ssp%new_cov + ssv(ft)%cov
+!    ssv(ft)%cov    = 0.0
+!    ssv(ft)%bio(1) = 0.0
+!    ssv(ft)%bio(2) = 0.0
+!    ssv(ft)%ppm    = 0.0
+!    ssv(ft)%slc    = 0.0
+!    ssv(ft)%rlc    = 0.0
+!    ssv(ft)%sln    = 0.0
+!    ssv(ft)%rln    = 0.0
+!  else
+!    ssp%new_cov    = ssp%new_cov + ssv(ft)%cov*x
+!    ssv(ft)%cov    = ssv(ft)%cov*(1.0 - x)
+!    ssv(ft)%slc    = ssv(ft)%slc*(1.0 - x)
+!    ssv(ft)%rlc    = ssv(ft)%rlc*(1.0 - x)
+!    ssv(ft)%sln    = ssv(ft)%sln*(1.0 - x)
+!    ssv(ft)%rln    = ssv(ft)%rln*(1.0 - x)
+!  endif
+!
+!end subroutine ACCUMULATE_BURNT_SOIL_RES
+!
+
 
 !***********************************************************************
 subroutine ACCUMULATE_BURNT_SOIL_RES(ft,x,firec)
@@ -654,37 +795,51 @@ real(dp) :: x,firec,active_leaf(max_cohorts),active_stem(max_cohorts),active_roo
 !***********************************************************************
 
   if (pft(ft)%sla > 0.0) then
-    active_leaf(ft) = ssv(ft)%lai%tot*12.0/pft(ft)%sla/18.0
+    active_leaf(ft) = ssv(ft)%lai%tot(1)*12.0/pft(ft)%sla/25.0
   else
     active_leaf(ft) = 0.0
   endif
-  active_stem(ft) = ssv(ft)%stem%tot
-  active_root(ft) = ssv(ft)%root%tot
+  active_stem(ft) = ssv(ft)%stem%tot(1)
+  active_root(ft) = ssv(ft)%root%tot(1)
 
   do i=1,8
     ssp%new_c(i) = ssp%new_c(i) + ssv(ft)%c(i)*ssv(ft)%cov*x
     ssp%new_n(i) = ssp%new_n(i) + ssv(ft)%n(i)*ssv(ft)%cov*x
+
+    ssp%xnew_c(pft(ft)%itag,i) = ssp%xnew_c(pft(ft)%itag,i) + ssv(ft)%c(i)*ssv(ft)%cov*x
+    ssp%xnew_n(pft(ft)%itag,i) = ssp%xnew_n(pft(ft)%itag,i) + ssv(ft)%n(i)*ssv(ft)%cov*x
   enddo
   do i=1,3
     ssp%new_minn(i) = ssp%new_minn(i) + ssv(ft)%minn(i)*ssv(ft)%cov*x
+    ssp%xnew_minn(pft(ft)%itag,i) = ssp%xnew_minn(pft(ft)%itag,i) + ssv(ft)%minn(i)*ssv(ft)%cov*x
   enddo
   do i=1,4
     ssp%new_soil_h2o(i) = ssp%new_soil_h2o(i) + ssv(ft)%soil_h2o(i)*ssv(ft)%cov*x
+    ssp%xnew_soil_h2o(pft(ft)%itag,i) = ssp%xnew_soil_h2o(pft(ft)%itag,i) + ssv(ft)%soil_h2o(i)*ssv(ft)%cov*x
   enddo
+
   ssp%new_snow = ssp%new_snow + ssv(ft)%snow*ssv(ft)%cov*x
   ssp%new_l_snow = ssp%new_l_snow + ssv(ft)%l_snow*ssv(ft)%cov*x
-
   ssp%new_slc = ssp%new_slc + (ssv(ft)%bio(1) + active_leaf(ft) + active_stem(ft) + &
  ssv(ft)%nppstore(1))*ssv(ft)%cov*x*0.2 + ssv(ft)%slc*x
   ssp%new_rlc = ssp%new_rlc + (ssv(ft)%bio(2) + active_root(ft))*ssv(ft)%cov*x + ssv(ft)%rlc*x
   ssp%new_sln = ssp%new_sln + ssv(ft)%sln*x
   ssp%new_rln = ssp%new_rln + ssv(ft)%rln*x
 
+  ssp%xnew_snow(pft(ft)%itag) = ssp%xnew_snow(pft(ft)%itag) + ssv(ft)%snow*ssv(ft)%cov*x
+  ssp%xnew_l_snow(pft(ft)%itag) = ssp%xnew_l_snow(pft(ft)%itag) + ssv(ft)%l_snow*ssv(ft)%cov*x
+  ssp%xnew_slc(pft(ft)%itag) = ssp%xnew_slc(pft(ft)%itag) + (ssv(ft)%bio(1) + active_leaf(ft) + active_stem(ft) + &
+ ssv(ft)%nppstore(1))*ssv(ft)%cov*x*0.2 + ssv(ft)%slc*x
+  ssp%xnew_rlc(pft(ft)%itag) = ssp%xnew_rlc(pft(ft)%itag) + (ssv(ft)%bio(2) + active_root(ft))*ssv(ft)%cov*x + ssv(ft)%rlc*x
+  ssp%xnew_sln(pft(ft)%itag) = ssp%xnew_sln(pft(ft)%itag) + ssv(ft)%sln*x
+  ssp%xnew_rln(pft(ft)%itag) = ssp%xnew_rln(pft(ft)%itag) + ssv(ft)%rln*x
+
   firec = firec + (ssv(ft)%bio(1) + active_leaf(ft) + active_stem(ft) + &
  ssv(ft)%nppstore(1))*ssv(ft)%cov*x*0.8
 
   if (x > 0.99999) then
     ssp%new_cov = ssp%new_cov + ssv(ft)%cov
+    ssp%xnew_cov(pft(ft)%itag) = ssp%xnew_cov(pft(ft)%itag) + ssv(ft)%cov
     ssv(ft)%cov    = 0.0
     ssv(ft)%bio(1) = 0.0
     ssv(ft)%bio(2) = 0.0
@@ -695,6 +850,7 @@ real(dp) :: x,firec,active_leaf(max_cohorts),active_stem(max_cohorts),active_roo
     ssv(ft)%rln    = 0.0
   else
     ssp%new_cov    = ssp%new_cov + ssv(ft)%cov*x
+    ssp%xnew_cov(pft(ft)%itag)    = ssp%xnew_cov(pft(ft)%itag) + ssv(ft)%cov*x
     ssv(ft)%cov    = ssv(ft)%cov*(1.0 - x)
     ssv(ft)%slc    = ssv(ft)%slc*(1.0 - x)
     ssv(ft)%rlc    = ssv(ft)%rlc*(1.0 - x)
@@ -740,22 +896,92 @@ end subroutine SET_NEW_SOIL_RES
 
 
 
+!***********************************************************************
+subroutine SET_NEW_SOIL_RES2(cohort,ft,x)
+!***********************************************************************
+integer cohort,ft,i
+real(dp) :: x
+!----------------------------------------------------------------------*
+
+!  print*,ssp%xnew_cov(1:10)
+!  print*,ssp%new_cov
+  x = 1.0
+
+  do i=1,8
+    ssv(cohort)%c(i) = ssp%xnew_c(ft,i)*x/ssv(cohort)%cov
+    ssv(cohort)%n(i) = ssp%xnew_n(ft,i)*x/ssv(cohort)%cov
+  enddo
+  do i=1,3
+    ssv(cohort)%minn(i) = ssp%xnew_minn(ft,i)*x/ssv(cohort)%cov
+  enddo
+  do i=1,4
+    ssv(cohort)%soil_h2o(i) = ssp%xnew_soil_h2o(ft,i)*x/ssv(cohort)%cov
+  enddo
+  ssv(cohort)%snow   = ssp%xnew_snow(ft)  *x/ssv(cohort)%cov
+  ssv(cohort)%l_snow = ssp%xnew_l_snow(ft)*x/ssv(cohort)%cov
+
+  ssv(cohort)%slc = ssp%xnew_slc(ft)*x
+  ssv(cohort)%rlc = ssp%xnew_rlc(ft)*x
+  ssv(cohort)%sln = ssp%xnew_sln(ft)*x
+  ssv(cohort)%rln = ssp%xnew_rln(ft)*x
+
+end subroutine SET_NEW_SOIL_RES2
+
+
+
+!!***********************************************************************
+!subroutine RESET_SOIL_RES()
+!!***********************************************************************
+!integer i
+!!----------------------------------------------------------------------*
+!  do i=1,8
+!    ssp%new_c(i) = 0.0
+!    ssp%new_n(i) = 0.0
+!  enddo
+!  do i=1,3
+!    ssp%new_minn(i) = 0.0
+!  enddo
+!  do i=1,4
+!    ssp%new_soil_h2o(i) = 0.0
+!  enddo
+!  ssp%new_snow = 0.0
+!  ssp%new_l_snow = 0.0
+!
+!  ssp%new_slc = 0.0
+!  ssp%new_rlc = 0.0
+!  ssp%new_sln = 0.0
+!  ssp%new_rln = 0.0
+!
+!  ssp%new_cov = 0.0
+!
+!end subroutine RESET_SOIL_RES
+!
 
 
 !***********************************************************************
 subroutine RESET_SOIL_RES()
 !***********************************************************************
-integer i
+integer i,j
 !----------------------------------------------------------------------*
   do i=1,8
     ssp%new_c(i) = 0.0
     ssp%new_n(i) = 0.0
+    do j=1,12
+      ssp%xnew_c(j,i) = 0.0
+      ssp%xnew_n(j,i) = 0.0
+    enddo
   enddo
   do i=1,3
     ssp%new_minn(i) = 0.0
+    do j=1,12
+      ssp%xnew_minn(j,i) = 0.0
+    enddo
   enddo
   do i=1,4
     ssp%new_soil_h2o(i) = 0.0
+    do j=1,12
+      ssp%xnew_soil_h2o(j,i) = 0.0
+    enddo
   enddo
   ssp%new_snow = 0.0
   ssp%new_l_snow = 0.0
@@ -767,7 +993,21 @@ integer i
 
   ssp%new_cov = 0.0
 
+  do j=1,12
+
+    ssp%xnew_snow(j) = 0.0
+    ssp%xnew_l_snow(j) = 0.0
+
+    ssp%xnew_slc(j) = 0.0
+    ssp%xnew_rlc(j) = 0.0
+    ssp%xnew_sln(j) = 0.0
+    ssp%xnew_rln(j) = 0.0
+
+    ssp%xnew_cov(j) = 0.0
+  enddo
+
 end subroutine RESET_SOIL_RES
+
 
 
 
@@ -840,25 +1080,25 @@ if (initise) then
         enddo
 
         do i=1,max_lai_comps
-          ssv(cohort)%lai%c(i)%val = 0.0
-          ssv(cohort)%lai%c(i)%age = 0.0
+          ssv(cohort)%lai%c(i,1)%val = 0.0
+          ssv(cohort)%lai%c(i,1)%age = 0.0
         enddo
         ssv(cohort)%lai%no = 0
-        ssv(cohort)%lai%tot = 0.0
+        ssv(cohort)%lai%tot(1) = 0.0
 
         do i=1,max_stem_comps
-          ssv(cohort)%stem%c(i)%val = 0.0
-          ssv(cohort)%stem%c(i)%age = 0.0
+          ssv(cohort)%stem%c(i,1)%val = 0.0
+          ssv(cohort)%stem%c(i,1)%age = 0.0
         enddo
         ssv(cohort)%stem%no = 0
-        ssv(cohort)%stem%tot = 0.0
+        ssv(cohort)%stem%tot(1) = 0.0
 
         do i=1,max_root_comps
-          ssv(cohort)%root%c(i)%val = 0.0
-          ssv(cohort)%root%c(i)%age = 0
+          ssv(cohort)%root%c(i,1)%val = 0.0
+          ssv(cohort)%root%c(i,1)%age = 0
         enddo
         ssv(cohort)%root%no = 0
-        ssv(cohort)%root%tot = 0.0
+        ssv(cohort)%root%tot(1) = 0.0
 
         do i=1,max_suma_comps
           ssv(cohort)%suma%c(i)%val = 0.0
@@ -1031,7 +1271,7 @@ co = ssp%cohort
 ! Leaf molecular weight.
 !----------------------------------------------------------------------*
 if (sla>0.0) then
-  msv%mv_leafmol = 1.0/(sla*18.0)
+  msv%mv_leafmol = 1.0/(sla*25.0)
 else
   msv%mv_leafmol =0.0
 endif

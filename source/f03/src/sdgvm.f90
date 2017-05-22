@@ -28,7 +28,7 @@ character(len=1000), parameter :: stver = 'VERSION current'
 real(dp) :: defaulttopsl
 parameter(defaulttopsl = 5.0)
 logical :: check_closure
-parameter(check_closure = .false.)
+parameter(check_closure = .true.)
 
 real(dp), dimension(max_cohorts) :: lai,evt,sresp,rof,gpp,ftprop,nppstoreold, &
  trn,lch,bioo,ht,soilc,soiln,minn,ftcov,covo,flow1,flow2, &
@@ -373,14 +373,14 @@ do site=1,sites
             pet2 = pet
             
             call HYDROLOGY(adp,sfc,sw,sswc,awl,kd,kx,eemm,etmm,pet2,prc(mnth,day), &
-     s1in,tmp(mnth,day),ssv(ft)%lai%tot,evap,tran,roff,interc,evbs,f2,f3,ft)
+     s1in,tmp(mnth,day),ssv(ft)%lai%tot(1),evap,tran,roff,interc,evbs,f2,f3,ft)
             flow1(ft) = flow1(ft) + f2/10.0
             flow2(ft) = flow2(ft) + f3/10.0
             
             call PHENOLOGY(yield,laiinc)
           
          !IF(ssp%year.EQ.2001.AND.pft(ft)%phen.EQ.3) THEN
-         !  WRITE(*,*)mnth,day,ssv(ft)%sown,ssv(ft)%sowni,ssv(ft)%harvest,ssv(ft)%lai%tot,&
+         !  WRITE(*,*)mnth,day,ssv(ft)%sown,ssv(ft)%sowni,ssv(ft)%harvest,ssv(ft)%lai%tot(1),&
          !    pft(ft)%optlai,ssv(ft)%nppstore(1),laiinc,pft(ft)%irrig(3),ssv(ft)%soil_h2o(2)
          !ENDIF
           
@@ -411,7 +411,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Set daily memories for output.                                       !
 !----------------------------------------------------------------------!
-            daily_out(1,ft,mnth,day) = ssv(ft)%lai%tot
+            daily_out(1,ft,mnth,day) = ssv(ft)%lai%tot(1)
             daily_out(2,ft,mnth,day) = roff
             daily_out(3,ft,mnth,day) = evap+tran
             daily_out(4,ft,mnth,day) = tran
@@ -444,10 +444,10 @@ do site=1,sites
             daily_out(25,ft,mnth,day) = fpr
             daily_out(26,ft,mnth,day) = 0.0
             if (pft(ft)%sla > 0.0)  daily_out(26,ft,mnth,day) = &
- ssv(ft)%lai%tot*12.0/pft(ft)%sla/18.0
+ ssv(ft)%lai%tot(1)*12.0/pft(ft)%sla/25.0
             daily_out(27,ft,mnth,day) = &
- ssv(ft)%bio(1) + ssv(ft)%stem%tot + ssv(ft)%nppstore(1)
-            daily_out(28,ft,mnth,day) = ssv(ft)%bio(2) + ssv(ft)%root%tot
+ ssv(ft)%bio(1) + ssv(ft)%stem%tot(1) + ssv(ft)%nppstore(1)
+            daily_out(28,ft,mnth,day) = ssv(ft)%bio(2) + ssv(ft)%root%tot(1)
             daily_out(29,ft,mnth,day) = soilc(ft)
             daily_out(30,ft,mnth,day) = soiln(ft)
             daily_out(31,ft,mnth,day) = lch(ft)

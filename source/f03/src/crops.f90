@@ -764,7 +764,7 @@ SUBROUTINE IRRIGATE(ft,sfc,sw)
   IF(pft(ft)%phen.NE.3) RETURN
   ! Return if not sown
   !WRITE(*,*)ssp%day+(ssp%mnth-1)*30,pft(ft)%sowday(3),ssv(ft)%sown,ssv(ft)%harvest&
-  !  ,ssv(ft)%phu,ssv(ft)%lai%tot
+  !  ,ssv(ft)%phu,ssv(ft)%lai%tot(1)
   IF(ssv(ft)%sown.EQ.0) RETURN
 
   ! Sum up the available water in the soil layers defined 
@@ -1186,87 +1186,96 @@ END SUBROUTINE READ_IRRIGATION
 ! subroutine harv(lit)                                                 !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Sends all carbon to litter on day of harvest
-!! @details
+!> @brief Harvest of crops
+!! @details 
 !!
-!! @author EPK,ML
+!! @author EPK
 !! @date Mar 2017
 !----------------------------------------------------------------------!
-SUBROUTINE HARV(lit)
+SUBROUTINE HARV(lit,yielit)
 !**********************************************************************!
 IMPLICIT NONE
 
-REAL(dp) :: lit
+REAL(dp) :: lit,hi,yielit
 INTEGER :: co,i
 
   co = ssp%cohort
+
+  ! Calculates harvest index
+  hi=0.7*pft(co)%harvindx+0.3*pft(co)%harvindx*pft(co)%fert(1)/pft(co)%fert(5)
+  hi=MIN(hi,pft(co)%harvindx)
+  ! Since you can have more than 2 yields in a calendar year,it is
+  ! calculated here cumulative and is being reset to 0 at the start of each
+  ! calendar year in phenology3 sub
+  ! Roots which are bio(2) do not account in crop yield
+  
+  ! Finds yield by adding canopy,nppstore,stem and dead steam multiplied by hi
+  ssv(co)%yield=ssv(co)%yield+hi* &
+   (ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
+    ssv(co)%stem%tot(1) + ssv(co)%bio(1))
+  
+  !Same as above only gets its own variable
+  yielit=hi* &
+   (ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
+    ssv(co)%stem%tot(1) + ssv(co)%bio(1))
+
   ! Adds up the carbon pools that will send to litter
   lit = 0.0
 
-  !----------------------------------------------------------------------!
-  ! Root harvest
-  !----------------------------------------------------------------------!
-
+  
+  ! Sends all root carbon to litter
   IF (ssv(co)%root%no > 0) THEN
     DO i=1,ssv(co)%root%no
-      lit=lit+ssv(co)%root%c(i)%val
-      ssv(co)%root%c(i)%val = 0.0
-      ssv(co)%root%c(i)%age = 0.0
+      lit=lit+ssv(co)%root%c(i,1)%val
+      ssv(co)%root%c(i,1)%val = 0.0
+      ssv(co)%root%c(i,1)%age = 0.0
     ENDDO
     ssv(co)%root%no=0
-    ssv(co)%root%tot=0.0
+    ssv(co)%root%tot(1)=0.0
   ENDIF
 
-  !----------------------------------------------------------------------!
-  ! Stem harvest
-  !----------------------------------------------------------------------!
-
+  
+  ! Sends (1-hi) stem carbon to litter
   IF (ssv(co)%stem%no > 0) THEN
     DO i=1,ssv(co)%stem%no
-      lit=lit+ssv(co)%stem%c(i)%val
-      ssv(co)%stem%c(i)%val = 0.0
-      ssv(co)%stem%c(i)%age = 0.0
+      lit=lit+(1-hi)*ssv(co)%stem%c(i,1)%val
+      ssv(co)%stem%c(i,1)%val = 0.0
+      ssv(co)%stem%c(i,1)%age = 0.0
     ENDDO
     ssv(co)%stem%no=0
-    ssv(co)%stem%tot=0.0
+    ssv(co)%stem%tot(1)=0.0
   ENDIF
 
-  !----------------------------------------------------------------------!
-  ! LAI harvest
-  !----------------------------------------------------------------------!
-
+ 
+  ! Sends (1-hi) leaf carbon to litter
   IF (ssv(co)%lai%no > 0) THEN
     DO i=1,ssv(co)%lai%no
-      lit=lit+ssv(co)%lai%c(i)%val*12.0/pft(co)%sla/18.0
-      ssv(co)%lai%c(i)%val = 0.0
-      ssv(co)%lai%c(i)%age = 0.0
+      lit=lit+(1-hi)*ssv(co)%lai%c(i,1)%val*12.0/pft(co)%sla/25.0
+      ssv(co)%lai%c(i,1)%val = 0.0
+      ssv(co)%lai%c(i,1)%age = 0.0
     ENDDO
     ssv(co)%lai%no=0
-    ssv(co)%lai%tot=0.0
+    ssv(co)%lai%tot(1)=0.0
   ENDIF
 
-  !----------------------------------------------------------------------!
-  ! nppstore(1) harvest
-  !----------------------------------------------------------------------!
-
-  lit=lit+ssv(co)%nppstore(1)
+  
+  ! Sends (1-hi) nppstore carbon to litter
+  lit=lit+(1-hi)*ssv(co)%nppstore(1)
   ssv(co)%nppstore(1)=0.
   
-  !----------------------------------------------------------------------!
-  ! bio(1) & bio(2) harvest
-  !----------------------------------------------------------------------!
   
-  lit=lit+ssv(co)%bio(1)+ssv(co)%bio(2)  
+  ! Sends (1-hi) dead stem to litter and all dead roots
+  lit=lit+(1-hi)*ssv(co)%bio(1)+ssv(co)%bio(2)  
   ssv(co)%bio(1)=0.
   ssv(co)%bio(2)=0.
 
-  IF(lit>50) THEN
-    ssv(co)%nppstore(1)=50.
-    lit=lit-50
-  ELSE
-    ssv(co)%nppstore(1)=lit
-    lit=0.
-  ENDIF
+!  IF(lit>50) THEN
+!    ssv(co)%nppstore(1)=50.
+!    lit=lit-50
+!  ELSE
+!    ssv(co)%nppstore(1)=lit
+!    lit=0.
+!  ENDIF
 
 END SUBROUTINE harv
 

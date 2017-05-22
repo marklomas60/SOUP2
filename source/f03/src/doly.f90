@@ -67,8 +67,8 @@ co = ssp%cohort
 ! Check carbon closure.
 !----------------------------------------------------------------------!
 if ((check_closure).and.(pft(co)%sla > 0.0)) then
-  old_total_carbon = ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + &
- ssv(co)%nppstore(1) + ssv(co)%stem%tot + ssv(co)%root%tot + ssv(co)%bio(1) + &
+  old_total_carbon = ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + &
+ ssv(co)%nppstore(1) + ssv(co)%stem%tot(1) + ssv(co)%root%tot(1) + ssv(co)%bio(1) + &
  ssv(co)%bio(2)
 endif
 !----------------------------------------------------------------------!
@@ -125,7 +125,7 @@ data ndsum/16,46,75,106,136,167,197,228,259,289,320,350/
 p = 101325.0
 
 ! Real lai,the remainder and the whole plus one 
-rlai = ssv(ssp%cohort)%lai%tot
+rlai = ssv(ssp%cohort)%lai%tot(1)
 rem = rlai - int(rlai)
 lai = int(rlai) + 1
 
@@ -140,7 +140,7 @@ rd = 0.82e-6
 maxc = 690.0/622.6
 ! Leaf molecular weight.
 if (sla>0.0) then
-  leafmol = 1.0/(sla*18.0)
+  leafmol = 1.0/(sla*25.0)
 else
   leafmol =0.0
 endif
@@ -325,8 +325,8 @@ daygpp= can2a*3600.0*hrs*12.0/1000000.0
 ! Check carbon closure.
 !----------------------------------------------------------------------!
 if ((check_closure).and.(pft(co)%sla > 0.0)) then
-  total_carbon = ssv(co)%lai%tot*12.0/pft(co)%sla/18.0 + &
- ssv(co)%nppstore(1) + ssv(co)%stem%tot + ssv(co)%root%tot + ssv(co)%bio(1) + &
+  total_carbon = ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + &
+ ssv(co)%nppstore(1) + ssv(co)%stem%tot(1) + ssv(co)%root%tot(1) + ssv(co)%bio(1) + &
  ssv(co)%bio(2)
   if (abs(total_carbon-old_total_carbon) >  1.0e-3) then
     write(*,*) 'Breach of carbon closure in DOLYDAY:', &
@@ -372,7 +372,7 @@ gam = 101325.0*1.012/(0.622*lam)
 
 ! Transpiration since it uses the canopy conductance (gsn) Eq.38
 ! calculated in doly
-if ((ssv(ssp%cohort)%lai%tot>0.1).and.(msv%mv_soil2g>ssp%wilt)) then
+if ((ssv(ssp%cohort)%lai%tot(1)>0.1).and.(msv%mv_soil2g>ssp%wilt)) then
   et = (s*rn + rho*1.012*canga*vpd)/(s + gam*(1.0 + canga/gsn))*tgp%p_et
 ! watch dog ajoute par ghislain 
   if (et<0.0) then

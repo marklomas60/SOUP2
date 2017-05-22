@@ -112,6 +112,131 @@ end subroutine COVER
 !***********************************************************************
 
 
+!
+!!**********************************************************************!
+!!                                                                      !
+!!               INITIALISE_NEW_COHORTS :: veg_dynamics                 !
+!!                -----------------------------------                   !
+!!                                                                      !
+!!     subroutine INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)      !
+!!                                                                      !                                                            
+!!----------------------------------------------------------------------!
+!!> @brief INITIALISE_NEW_COHORTS
+!!! @details ! It gets ftprop(ft) which holds the cov it needs to add 
+!!! for each ft for this year from the COVER subroutine.One new cohort 
+!!! for each ft will carry this cover.It will be initialised relatively 
+!!! to its cover and depending on what was left in the pools from cohorts
+!!! that died.
+!!!
+!!! @author Mark Lomas
+!!! @date Feb 2006
+!!----------------------------------------------------------------------!
+!!***********************************************************************
+!subroutine INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)
+!!***********************************************************************
+!real(dp) :: ftprop(max_cohorts),sumc,sumftprop,total_carbon,old_total_carbon
+!integer ft,nft,i,cohort,ierase
+!logical check_closure
+!!----------------------------------------------------------------------*
+!! Check carbon closure.
+!!----------------------------------------------------------------------*
+!  if (check_closure) call SUM_CARBON(old_total_carbon,.false.)
+!!----------------------------------------------------------------------*
+!
+!sumftprop = 0.0
+!do ft=1,nft
+!  sumftprop = sumftprop + ftprop(ft)
+!enddo
+!
+!!----------------------------------------------------------------------*
+!! Set cover arrays for this years ft proportions, take carbon from     *
+!! litter to provide nppstore and canopy.                               *
+!!----------------------------------------------------------------------*
+!cohort = ssp%cohorts
+!
+!do ft=1,nft
+!  if (ftprop(ft)>0.0) then
+!  ierase=1
+!  IF (pft_tab(ft)%phen.EQ.3.AND.ssp%co2ftmap(ft,1).EQ.1) THEN
+!   IF (ssv(ssp%co2ftmap(ft,2))%sown.EQ.1) THEN
+!     ierase=0
+!     pft(ssp%co2ftmap(ft,2))=pft_tab(ft)
+!   ENDIF
+!  ENDIF
+!  IF (ierase.EQ.1) THEN
+!    cohort = cohort + 1
+!    ssp%co2ftmap(ft,1) = ssp%co2ftmap(ft,1) + 1
+!    ssp%co2ftmap(ft,ssp%co2ftmap(ft,1)+1) = cohort
+!!----------------------------------------------------------------------*
+!! Set plant functional type parameterisation for the new cohorts.
+!!----------------------------------------------------------------------*
+!    pft(cohort) = pft_tab(ft)
+!
+!!----------------------------------------------------------------------*
+!! Set initial values of the system state.
+!!----------------------------------------------------------------------*
+!    call INITIALISE_STATE_COHORT(cohort)
+!
+!    ssv(cohort)%stemfr = ssv(1)%stemfr
+!
+!    ssv(cohort)%nppstore(1) = pft(cohort)%stemx
+!    ssv(cohort)%nppstore(2) = pft(cohort)%stemx
+!    ssv(cohort)%nppstore(3) = pft(cohort)%stemx
+!    if ((pft(cohort)%mort < 5).and.(pft(cohort)%mort > 0)) then
+!      if (ssp%co2ftmap(ft,1) > 1) then
+!        ssv(cohort)%nppstore(1) = ssv(ssp%co2ftmap(ft,2))%nppstore(1)
+!        ssv(cohort)%nppstore(2) = ssv(ssp%co2ftmap(ft,2))%nppstore(2)
+!        ssv(cohort)%nppstore(3) = ssv(ssp%co2ftmap(ft,2))%nppstore(3)
+!      endif
+!    endif
+!
+!    ssv(cohort)%cov = ftprop(ft)
+!    ssv(cohort)%ppm = pft_tab(ft)%ppm0
+!    ssv(cohort)%hgt = 0.004
+!    ssv(cohort)%age = 1
+!    call SET_NEW_SOIL_RES(cohort,ftprop(ft)/sumftprop)
+!!----------------------------------------------------------------------*
+!! Take carbon from litter to balance the storage.
+!!----------------------------------------------------------------------*
+!    ssv(cohort)%slc = ssv(cohort)%slc - ssv(cohort)%nppstore(1)*ssv(cohort)%cov
+!
+!    if (ssv(cohort)%slc<0.0) then
+!!----------------------------------------------------------------------*
+!! Make up any shortfall with soil carbon.
+!!----------------------------------------------------------------------*
+!      sumc = 0.0
+!      do i=1,8
+!         sumc = sumc + ssv(cohort)%c(i)
+!      enddo
+!      do i=1,8
+!        ssv(cohort)%c(i) = ssv(cohort)%c(i)*(1.0+ssv(cohort)%slc/sumc/ssv(cohort)%cov)
+!      enddo
+!      ssv(cohort)%slc = 0.0
+!    endif
+!!----------------------------------------------------------------------*
+!ENDIF
+!  endif
+!enddo
+!ssp%cohorts = cohort
+!call RESET_SOIL_RES()
+!
+!!----------------------------------------------------------------------*
+!! Check carbon closure.
+!!----------------------------------------------------------------------*
+!if (check_closure) then
+!  call SUM_CARBON(total_carbon,.false.)
+!  if (abs(total_carbon-old_total_carbon) > 1.0e-3) then
+!    write(*,*) 'Breach of carbon closure in INITIALISE_NEW_COHORTS:', &
+! total_carbon-old_total_carbon,' g/m^2.'
+!  endif
+!endif
+!
+!!***********************************************************************
+!end subroutine INITIALISE_NEW_COHORTS
+!!***********************************************************************
+!
+!
+
 
 !**********************************************************************!
 !                                                                      !
@@ -137,6 +262,14 @@ subroutine INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)
 real(dp) :: ftprop(max_cohorts),sumc,sumftprop,total_carbon,old_total_carbon
 integer ft,nft,i,cohort,ierase
 logical check_closure
+real(dp) :: extraC,amount_taken,prop_taken,prop_needed,sum_prop_taken
+real(dp), dimension(8) :: extras_c,extras_n
+real(dp), dimension(3) :: extras_minn
+real(dp), dimension(4) :: extras_soil_h2o
+real(dp) :: extras_snow,extras_l_snow,extras_slc,extras_rlc,extras_sln
+real(dp) :: extras_rln,sumslc
+integer :: loop_check(max_cohorts),adjust_check
+
 !----------------------------------------------------------------------*
 ! Check carbon closure.
 !----------------------------------------------------------------------*
@@ -154,16 +287,164 @@ enddo
 !----------------------------------------------------------------------*
 cohort = ssp%cohorts
 
+sumc = 0.0
+sumslc = 0.0
+do ft=1,nft
+  sumc = sumc + ssp%xnew_c(ft,1)
+  sumslc = sumslc + ssp%xnew_slc(ft)
+enddo
+!print*
+!print'(''Start sum C ''10f12.6)',sumc,sumslc
+
+!print'(''ftprop  '',10f8.4)',ftprop(1:8)
+!print'(''new cov ''10f8.4)',ssp%xnew_cov(1:8)
+
+!print*,sumftprop,ssp%new_cov,ssp%xnew_cov(8)
+
+!print'(''total C ''10f8.4)',ssp%xnew_cov(8)
+!print'(''averg C ''10f8.1)',ssp%xnew_c(8,1)/ssp%xnew_cov(8)
+!print'(''tot before ''10f8.4)',ssp%xnew_c(8,1)
+
+!----------------------------------------------------------------------*
+! Make the averaged extraC pool. This is made up from any pfts where the new  *
+! proportions (ftprop) are less than the old ssp%new_cov.              *
+!----------------------------------------------------------------------*
+extras_c = 0.0
+extras_n = 0.0
+extras_minn = 0.0
+extras_soil_h2o = 0.0
+extras_snow = 0.0
+extras_l_snow = 0.0
+extras_slc = 0.0
+extras_rlc = 0.0
+extras_sln = 0.0
+extras_rln = 0.0
+
+loop_check = 0
+adjust_check = 0
+sum_prop_taken = 0.0
+prop_taken = 0.0
+do ft=1,nft
+  if (ssp%xnew_cov(ft)-ftprop(ft).gt.1e-6) then
+!    print*,'x ',ft
+    loop_check(ft) = 1
+    adjust_check = 1
+!    print*,'x ',ft,ssp%xnew_cov(ft)-ftprop(ft)
+    prop_taken = (ssp%xnew_cov(ft) - ftprop(ft))/sumftprop
+    sum_prop_taken = sum_prop_taken + prop_taken
+
+    do i=1,8
+      amount_taken = prop_taken*ssp%xnew_c(ft,i)
+      ssp%xnew_c(ft,i) = ssp%xnew_c(ft,i) - amount_taken
+      extras_c(i) = extras_c(i) + amount_taken
+    enddo
+
+    do i=1,8
+      amount_taken = prop_taken*ssp%xnew_n(ft,i)
+      ssp%xnew_n(ft,i) = ssp%xnew_n(ft,i) - amount_taken
+      extras_n(i) = extras_n(i) + amount_taken
+    enddo
+
+    do i=1,3
+      amount_taken = prop_taken*ssp%xnew_minn(ft,i)
+      ssp%xnew_minn(ft,i) = ssp%xnew_minn(ft,i) - amount_taken
+      extras_minn(i) = extras_minn(i) + amount_taken
+    enddo
+
+    do i=1,4
+      amount_taken = prop_taken*ssp%xnew_soil_h2o(ft,i)
+      ssp%xnew_soil_h2o(ft,i) = ssp%xnew_soil_h2o(ft,i) - amount_taken
+      extras_soil_h2o(i) = extras_soil_h2o(i) + amount_taken
+    enddo
+
+    amount_taken = prop_taken*ssp%xnew_snow(ft)
+    ssp%xnew_snow(ft) = ssp%xnew_snow(ft) - amount_taken
+    extras_snow = extras_snow + amount_taken
+
+    amount_taken = prop_taken*ssp%xnew_l_snow(ft)
+    ssp%xnew_l_snow(ft) = ssp%xnew_l_snow(ft) - amount_taken
+    extras_l_snow = extras_l_snow + amount_taken
+
+    amount_taken = prop_taken*ssp%xnew_slc(ft)
+    ssp%xnew_slc(ft) = ssp%xnew_slc(ft) - amount_taken
+    extras_slc = extras_slc + amount_taken
+
+    amount_taken = prop_taken*ssp%xnew_rlc(ft)
+    ssp%xnew_rlc(ft) = ssp%xnew_rlc(ft) - amount_taken
+    extras_rlc = extras_rlc + amount_taken
+
+    amount_taken = prop_taken*ssp%xnew_sln(ft)
+    ssp%xnew_sln(ft) = ssp%xnew_sln(ft) - amount_taken
+    extras_sln = extras_sln + amount_taken
+
+    amount_taken = prop_taken*ssp%xnew_rln(ft)
+    ssp%xnew_rln(ft) = ssp%xnew_rln(ft) - amount_taken
+    extras_rln = extras_rln + amount_taken
+
+  endif
+enddo
+!print*,'sum_prop_taken',sum_prop_taken
+
+!print'(''tot after C ''10f8.4)',ssp%xnew_c(8,1)
+!print'(''averg C ''10f8.1)',ssp%xnew_c(8,1)/ftprop(8)
+!print*
+!----------------------------------------------------------------------*
+! Spread the extraC pool amongst the pfts where the new proportions    *
+! (ftprop) the averaged pool.                                          *
+!----------------------------------------------------------------------*
+!if (adjust_check.eq.1) then
+prop_needed = 0.0
+do ft=1,nft
+  if (ssp%xnew_cov(ft)-ftprop(ft).lt.-1.e-6) then
+!  if (loop_check(ft).eq.0) then
+!    print*,'y ',ft,ssp%xnew_cov(ft)-ftprop(ft)
+    prop_needed = (ftprop(ft) - ssp%xnew_cov(ft))/sumftprop/&
+sum_prop_taken
+
+    do i=1,8
+      ssp%xnew_c(ft,i) = ssp%xnew_c(ft,i) + prop_needed*extras_c(i)
+      ssp%xnew_n(ft,i) = ssp%xnew_n(ft,i) + prop_needed*extras_n(i)
+    enddo
+    do i=1,3
+      ssp%xnew_minn(ft,i) = ssp%xnew_minn(ft,i) + prop_needed*extras_minn(i)
+    enddo
+    do i=1,4
+      ssp%xnew_soil_h2o(ft,i) = ssp%xnew_soil_h2o(ft,i) + prop_needed*extras_soil_h2o(i)
+    enddo
+
+    ssp%xnew_snow(ft) = ssp%xnew_snow(ft) + prop_needed*extras_snow
+    ssp%xnew_l_snow(ft) = ssp%xnew_l_snow(ft) + prop_needed*extras_l_snow
+    ssp%xnew_slc(ft) = ssp%xnew_slc(ft) + prop_needed*extras_slc
+    ssp%xnew_rlc(ft) = ssp%xnew_rlc(ft) + prop_needed*extras_rlc
+    ssp%xnew_sln(ft) = ssp%xnew_sln(ft) + prop_needed*extras_sln
+    ssp%xnew_rln(ft) = ssp%xnew_rln(ft) + prop_needed*extras_rln
+
+  endif
+enddo
+!endif
+
+sumc = 0.0
+sumslc = 0.0
+do ft=1,nft
+  sumc = sumc + ssp%xnew_c(ft,1)
+  sumslc = sumslc + ssp%xnew_slc(ft)
+enddo
+!print'(''sum C ''10f12.6)',sumc,sumslc
+!print*,prop_needed,extras_slc
+
+
+!----------------------------------------------------------------------*
+
 do ft=1,nft
   if (ftprop(ft)>0.0) then
-  ierase=1
-  IF (pft_tab(ft)%phen.EQ.3.AND.ssp%co2ftmap(ft,1).EQ.1) THEN
-   IF (ssv(ssp%co2ftmap(ft,2))%sown.EQ.1) THEN
-     ierase=0
-     pft(ssp%co2ftmap(ft,2))=pft_tab(ft)
-   ENDIF
-  ENDIF
-  IF (ierase.EQ.1) THEN
+!    ierase=1
+!    IF (pft_tab(ft)%phen.EQ.3.AND.ssp%co2ftmap(ft,1).EQ.1) THEN
+!      IF (ssv(ssp%co2ftmap(ft,2))%sown.EQ.1) THEN
+!        ierase=0
+!        pft(ssp%co2ftmap(ft,2))=pft_tab(ft)
+!      ENDIF
+!    ENDIF
+!    IF (ierase.EQ.1) THEN
     cohort = cohort + 1
     ssp%co2ftmap(ft,1) = ssp%co2ftmap(ft,1) + 1
     ssp%co2ftmap(ft,ssp%co2ftmap(ft,1)+1) = cohort
@@ -195,6 +476,7 @@ do ft=1,nft
     ssv(cohort)%hgt = 0.004
     ssv(cohort)%age = 1
     call SET_NEW_SOIL_RES(cohort,ftprop(ft)/sumftprop)
+!    call SET_NEW_SOIL_RES2(cohort,ft,ftprop(ft)/sumftprop)
 
 !----------------------------------------------------------------------*
 ! Take carbon from litter to balance the storage.
@@ -215,7 +497,7 @@ do ft=1,nft
       ssv(cohort)%slc = 0.0
     endif
 !----------------------------------------------------------------------*
-ENDIF
+!ENDIF
   endif
 enddo
 ssp%cohorts = cohort
@@ -235,7 +517,6 @@ endif
 !***********************************************************************
 end subroutine INITIALISE_NEW_COHORTS
 !***********************************************************************
-
 
 
 
@@ -437,7 +718,7 @@ do ft=1,nft
 
       year = int(ssv(ift)%age+.5)
 
-      shv = ssv(ift)%stem%tot
+      shv = ssv(ift)%stem%tot(1)
       emv = evp(ift)/3600.0/1000.0
       lmv = lai(ift)*1.3/(lai(ift) + 3.0)
       lmv = 1.0
@@ -470,7 +751,7 @@ do ft=1,nft
 ! pbio = g/individual
 !----------------------------------------------------------------------*
         pbioold = ssv(ift)%bio(1)/ssv(ift)%ppm
-        pbionew = (ssv(ift)%bio(1) + ssv(ift)%stem%tot*(1.0 - &
+        pbionew = (ssv(ift)%bio(1) + ssv(ift)%stem%tot(1)*(1.0 - &
  stlit(real(year,dp),ftmat(ift))))/ssv(ift)%ppm
 
 !----------------------------------------------------------------------*
@@ -505,7 +786,7 @@ do ft=1,nft
 !----------------------------------------------------------------------*
 !          print*,'thinning'
           xxx = (grate(year)+dimold/2.0)**2.0*1000000.0*hgtnew(year)*pi*pft(ift)%wden
-          ppmnew(year,ift) = (ssv(ift)%bio(1) + ssv(ift)%stem%tot* &
+          ppmnew(year,ift) = (ssv(ift)%bio(1) + ssv(ift)%stem%tot(1)* &
  (1.0 - stlit(real(year,dp),ftmat(ift)))/100.0)/xxx
           covnew(year,ift) = ssv(ift)%cov
 
@@ -1165,7 +1446,7 @@ do ft=1,max_pftps
 enddo
 
 do ft=1,ssp%cohorts
-  IF (ssv(ft)%sown.NE.1) THEN 
+!  IF (ssv(ft)%sown.NE.1) THEN 
     if (ssv(ft)%age > real(pft(ft)%mort)-0.1) then
       call ACCUMULATE_DIST_SOIL_RES(ft,1.0_dp)
     else
@@ -1174,7 +1455,7 @@ do ft=1,ssp%cohorts
     !----------------------------------------------------------------------*
       ssv(ft)%age = ssv(ft)%age + 1.0
     endif
-  ENDIF
+!  ENDIF
 enddo
 
 !----------------------------------------------------------------------*
